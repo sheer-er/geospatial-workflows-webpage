@@ -1,0 +1,93 @@
+[
+  {
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Geospatial Workflows",
+    "section": "",
+    "text": "Example: Visualizing a Precipitation Field\n\n\n\nprecipitation\n\nremote-sensing\n\ntemplate\n\n\n\nA template post showing how to mix narrative, code, static figures, and an interactive map in one page.\n\n\n\n\n\nSep 8, 2026\n\n\n\n\n\n\n\n\n\n\n\n\nTesting\n\n\n\nprecipitation\n\nremote-sensing\n\ntemplate\n\n\n\nBig test\n\n\n\n\n\nSep 8, 2026\n\n\n\n\n\nNo matching items"
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html",
+    "href": "posts/2026-09-08-example-workflow/index.html",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "",
+    "text": "This is a template post. Replace this section with a short narrative explaining the scientific question, the dataset, and why the workflow matters — this is the part that makes the post more than just code. This is the kind of framing Matthew Heberger and Zack Labe both do well: a sentence or two of “why,” then the visualization, then the details."
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html#what-this-workflow-does",
+    "href": "posts/2026-09-08-example-workflow/index.html#what-this-workflow-does",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "",
+    "text": "This is a template post. Replace this section with a short narrative explaining the scientific question, the dataset, and why the workflow matters — this is the part that makes the post more than just code. This is the kind of framing Matthew Heberger and Zack Labe both do well: a sentence or two of “why,” then the visualization, then the details."
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html#load-and-process-data",
+    "href": "posts/2026-09-08-example-workflow/index.html#load-and-process-data",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "Load and process data",
+    "text": "Load and process data\n\n\nCode\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Synthetic stand-in for a real precipitation grid (e.g., PERSIANN, IMERG).\n# Replace this block with your actual data-loading code\n# (xarray.open_dataset, rioxarray.open_rasterio, etc.)\nrng = np.random.default_rng(0)\nlat = np.linspace(30, 40, 50)\nlon = np.linspace(-100, -90, 50)\nprecip = rng.gamma(2, 2, size=(50, 50))"
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html#static-figure",
+    "href": "posts/2026-09-08-example-workflow/index.html#static-figure",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "Static figure",
+    "text": "Static figure\nStatic figures (like the ones on Zack Labe’s site) are the easiest way to share results — just a matplotlib plot saved into the rendered page.\n\n\nCode\nfig, ax = plt.subplots(figsize=(7, 5))\nim = ax.pcolormesh(lon, lat, precip, cmap=\"Blues\", shading=\"auto\")\nax.set_title(\"Example precipitation field (synthetic)\")\nax.set_xlabel(\"Longitude\")\nax.set_ylabel(\"Latitude\")\nfig.colorbar(im, ax=ax, label=\"mm/day\")\nplt.show()"
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html#interactive-map",
+    "href": "posts/2026-09-08-example-workflow/index.html#interactive-map",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "Interactive map",
+    "text": "Interactive map\nFor anything the reader should be able to click/pan/zoom, embed an interactive map. folium (Leaflet under the hood — the same library mghydro.com uses) exports directly to HTML that Quarto will embed inline.\n\n\nCode\nimport folium\n\nm = folium.Map(location=[35, -95], zoom_start=5, tiles=\"CartoDB positron\")\nfolium.Marker([35, -95], tooltip=\"Example site\").add_to(m)\nm\n\n\n/mnt/c/Users/EricShearer/Downloads/geospatial-workflows/geospatial-workflows/.venv/lib/python3.9/site-packages/folium/raster_layers.py:130: UserWarning: CartoDB tiles now require an API key. Please provide one to continue using the tiles. You can request the key at https://carto.com/basemaps/apikey/.\n  tiles = tiles.build_url(fill_subdomain=False, scale_factor=\"{r}\")  # type: ignore\n\n\nMake this Notebook Trusted to load map: File -&gt; Trust Notebook"
+  },
+  {
+    "objectID": "posts/2026-09-08-example-workflow/index.html#notes-reproducibility",
+    "href": "posts/2026-09-08-example-workflow/index.html#notes-reproducibility",
+    "title": "Example: Visualizing a Precipitation Field",
+    "section": "Notes / reproducibility",
+    "text": "Notes / reproducibility\n\nLink to the full analysis code / notebook on GitHub here.\nNote data sources and any preprocessing steps.\nMention any caveats or things you’d do differently next time — this is the kind of detail that makes a portfolio piece feel like real research rather than a polished demo."
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html",
+    "href": "posts/2026-09-08-test-page/index.html",
+    "title": "Testing",
+    "section": "",
+    "text": "This is a template post. Replace this section with a short narrative explaining the scientific question, the dataset, and why the workflow matters — this is the part that makes the post more than just code. This is the kind of framing Matthew Heberger and Zack Labe both do well: a sentence or two of “why,” then the visualization, then the details."
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html#what-this-workflow-does",
+    "href": "posts/2026-09-08-test-page/index.html#what-this-workflow-does",
+    "title": "Testing",
+    "section": "",
+    "text": "This is a template post. Replace this section with a short narrative explaining the scientific question, the dataset, and why the workflow matters — this is the part that makes the post more than just code. This is the kind of framing Matthew Heberger and Zack Labe both do well: a sentence or two of “why,” then the visualization, then the details."
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html#load-and-process-data",
+    "href": "posts/2026-09-08-test-page/index.html#load-and-process-data",
+    "title": "Testing",
+    "section": "Load and process data",
+    "text": "Load and process data\n\n\nCode\nimport numpy as np\nimport matplotlib.pyplot as plt\n\n# Synthetic stand-in for a real precipitation grid (e.g., PERSIANN, IMERG).\n# Replace this block with your actual data-loading code\n# (xarray.open_dataset, rioxarray.open_rasterio, etc.)\nrng = np.random.default_rng(0)\nlat = np.linspace(30, 40, 50)\nlon = np.linspace(-100, -90, 50)\nprecip = rng.gamma(2, 2, size=(50, 50))"
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html#static-figure",
+    "href": "posts/2026-09-08-test-page/index.html#static-figure",
+    "title": "Testing",
+    "section": "Static figure",
+    "text": "Static figure\nStatic figures (like the ones on Zack Labe’s site) are the easiest way to share results — just a matplotlib plot saved into the rendered page.\n\n\nCode\nfig, ax = plt.subplots(figsize=(7, 5))\nim = ax.pcolormesh(lon, lat, precip, cmap=\"Blues\", shading=\"auto\")\nax.set_title(\"Example precipitation field (synthetic)\")\nax.set_xlabel(\"Longitude\")\nax.set_ylabel(\"Latitude\")\nfig.colorbar(im, ax=ax, label=\"mm/day\")\nplt.show()"
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html#interactive-map",
+    "href": "posts/2026-09-08-test-page/index.html#interactive-map",
+    "title": "Testing",
+    "section": "Interactive map",
+    "text": "Interactive map\nFor anything the reader should be able to click/pan/zoom, embed an interactive map. folium (Leaflet under the hood — the same library mghydro.com uses) exports directly to HTML that Quarto will embed inline.\n\n\nCode\nimport folium\n\nm = folium.Map(location=[35, -95], zoom_start=5, tiles=\"CartoDB positron\")\nfolium.Marker([35, -95], tooltip=\"Example site\").add_to(m)\nm\n\n\n/mnt/c/Users/EricShearer/Downloads/geospatial-workflows/geospatial-workflows/.venv/lib/python3.9/site-packages/folium/raster_layers.py:130: UserWarning: CartoDB tiles now require an API key. Please provide one to continue using the tiles. You can request the key at https://carto.com/basemaps/apikey/.\n  tiles = tiles.build_url(fill_subdomain=False, scale_factor=\"{r}\")  # type: ignore\n\n\nMake this Notebook Trusted to load map: File -&gt; Trust Notebook"
+  },
+  {
+    "objectID": "posts/2026-09-08-test-page/index.html#notes-reproducibility",
+    "href": "posts/2026-09-08-test-page/index.html#notes-reproducibility",
+    "title": "Testing",
+    "section": "Notes / reproducibility",
+    "text": "Notes / reproducibility\n\nLink to the full analysis code / notebook on GitHub here.\nNote data sources and any preprocessing steps.\nMention any caveats or things you’d do differently next time — this is the kind of detail that makes a portfolio piece feel like real research rather than a polished demo."
+  }
+]

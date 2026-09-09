@@ -1,0 +1,67 @@
+---
+title: "Testing"
+description: "Big test"
+date: 2026-09-08
+categories: [precipitation, remote-sensing, template]
+jupyter: python3
+---
+
+## What this workflow does
+
+This is a template post. Replace this section with a short narrative
+explaining the scientific question, the dataset, and why the workflow
+matters — this is the part that makes the post more than just code. This is
+the kind of framing Matthew Heberger and Zack Labe both do well: a sentence
+or two of "why," then the visualization, then the details.
+
+## Load and process data
+
+```{python}
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Synthetic stand-in for a real precipitation grid (e.g., PERSIANN, IMERG).
+# Replace this block with your actual data-loading code
+# (xarray.open_dataset, rioxarray.open_rasterio, etc.)
+rng = np.random.default_rng(0)
+lat = np.linspace(30, 40, 50)
+lon = np.linspace(-100, -90, 50)
+precip = rng.gamma(2, 2, size=(50, 50))
+```
+
+## Static figure
+
+Static figures (like the ones on Zack Labe's site) are the easiest way to
+share results — just a `matplotlib` plot saved into the rendered page.
+
+```{python}
+fig, ax = plt.subplots(figsize=(7, 5))
+im = ax.pcolormesh(lon, lat, precip, cmap="Blues", shading="auto")
+ax.set_title("Example precipitation field (synthetic)")
+ax.set_xlabel("Longitude")
+ax.set_ylabel("Latitude")
+fig.colorbar(im, ax=ax, label="mm/day")
+plt.show()
+```
+
+## Interactive map
+
+For anything the reader should be able to click/pan/zoom, embed an
+interactive map. `folium` (Leaflet under the hood — the same library
+mghydro.com uses) exports directly to HTML that Quarto will embed inline.
+
+```{python}
+import folium
+
+m = folium.Map(location=[35, -95], zoom_start=5, tiles="CartoDB positron")
+folium.Marker([35, -95], tooltip="Example site").add_to(m)
+m
+```
+
+## Notes / reproducibility
+
+- Link to the full analysis code / notebook on GitHub here.
+- Note data sources and any preprocessing steps.
+- Mention any caveats or things you'd do differently next time — this is
+  the kind of detail that makes a portfolio piece feel like real research
+  rather than a polished demo.

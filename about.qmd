@@ -1,0 +1,34 @@
+---
+title: "About"
+image: profile.jpg
+about:
+  template: solana
+  links:
+    - icon: github
+      text: GitHub
+      href: https://github.com/your-github-username
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/your-linkedin
+    - icon: envelope
+      text: Email
+      href: mailto:you@example.com
+---
+
+## Bio
+
+PhD-level researcher working in satellite precipitation and optical remote
+sensing. Background includes work with PERSIANN and atmospheric river
+research. This site collects reproducible workflows, code walkthroughs, and
+notes from ongoing projects.
+
+## Research interests
+
+- Satellite precipitation retrieval and validation
+- Optical / hyperspectral remote sensing (e.g., EMIT, PRISMA)
+- Cloud-native geospatial data pipelines
+- Applied machine learning for imagery
+
+## Publications
+
+*(link to Google Scholar, or list key papers here)*

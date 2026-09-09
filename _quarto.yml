@@ -1,0 +1,32 @@
+project:
+  type: website
+  output-dir: docs   # GitHub Pages will serve from /docs on the main branch
+
+website:
+  title: "Your Name | Geospatial Workflows"
+  description: "Notes and reproducible workflows in satellite precipitation, remote sensing, and hydrology."
+  navbar:
+    left:
+      - href: index.qmd
+        text: Posts
+      - href: about.qmd
+        text: About
+    right:
+      - icon: github
+        href: https://github.com/your-github-username
+      - icon: linkedin
+        href: https://www.linkedin.com/in/your-linkedin
+
+  page-footer:
+    left: "© 2026 Your Name"
+    right: "Built with [Quarto](https://quarto.org)"
+
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+    toc: true
+    code-fold: show
+    code-tools: true
+    fig-width: 8
+    fig-height: 5
