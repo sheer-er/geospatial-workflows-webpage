@@ -1,0 +1,23 @@
+name: geospatial-workflows
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - jupyter
+  - numpy
+  - pandas
+  - matplotlib
+  - xarray
+  - cfgrib
+  - eccodes            # C library cfgrib needs - much easier via conda than pip
+  - geopandas
+  - shapely
+  - pyproj
+  - cartopy
+  - requests
+  - folium
+  - rioxarray
+  - pip
+  - yaml
+  - pip:
+      - herbie-data

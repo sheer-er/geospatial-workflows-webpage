@@ -8,12 +8,26 @@ website.
 
 ## Local setup
 
+**Pick ONE of the two options below — don't activate both at once.** They're
+alternative ways of installing the same kind of thing (Python packages), and
+stacking them just causes confusing "module not found" errors.
+
 ```bash
 # 1. Install Quarto (one-time): https://quarto.org/docs/get-started/
-# 2. Create a Python environment and install dependencies
+
+# 2a. Option A: pip + venv (requirements.txt now includes everything,
+#     including the GFS/NHC post's deps)
 python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
+# to leave this environment later: deactivate
+
+# 2b. Option B: conda/micromamba (recommended if cfgrib/eccodes fails to
+#     build under pip — conda-forge handles that dependency more reliably)
+# If you already ran Option A: run `deactivate` first to exit .venv
+micromamba create -f environment.yml
+micromamba activate geospatial-workflows
+# to leave this environment later: micromamba deactivate
 
 # 3. Preview the site locally (live-reloads on save)
 quarto preview
@@ -30,7 +44,9 @@ quarto preview
 ## Publishing
 
 This repo is set up to auto-publish to **GitHub Pages** via GitHub Actions
-(`.github/workflows/publish.yml`) every time you push to `main`:
+(`.github/workflows/publish.yml`) every time you push to `main`, **and on a
+daily schedule** (`cron: "0 12 * * *"`) so time-sensitive posts — like the
+NHC/GFS tropical cyclone page — stay current without manual re-renders:
 
 1. Push this repo to GitHub.
 2. In the repo settings, go to **Pages** and set the source to the `docs/`
@@ -48,7 +64,8 @@ geospatial-workflows/
 ├── index.qmd                # homepage — auto-lists posts/
 ├── about.qmd                # bio / links page
 ├── styles.css               # custom CSS overrides
-├── requirements.txt         # Python deps for rendering
+├── requirements.txt         # Python deps for simple, pip-only posts
+├── environment.yml          # conda env for posts needing cfgrib/eccodes/cartopy
 ├── posts/
 │   └── YYYY-MM-DD-slug/
 │       └── index.qmd        # one folder per post

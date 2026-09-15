@@ -1,0 +1,563 @@
+---
+title: "NHC Tropical Cyclone Outlook: Rainfall & Max Sustained Wind within 500 km"
+description: >
+  Lets you pick any currently active NHC storm (Atlantic, East Pacific, or
+  Central Pacific) and view a composite rainfall accumulation (in) and
+  max sustained wind (mph) field within 500 km of its forecast track, using
+  HAFS.
+date: 2026-09-09
+categories: [tropical-cyclones, hafs, nhc, precipitation]
+jupyter: python3
+execute:
+  freeze: false   # always re-run at render time, so scheduled rebuilds pull fresh data
+resources:
+  - storm_images/*.png   # generated at render time via raw <img> tags, not markdown
+                          # image syntax, so Quarto won't auto-discover them -- this
+                          # forces them to be copied into the output dir
+---
+
+## What this page does
+
+Every time this page is rendered (including the scheduled daily rebuild —
+see the note at the bottom), it:
+
+1. Pulls **every currently active NHC storm** across the **Atlantic**,
+   **East Pacific**, and **Central Pacific** basins.
+2. For each one, downloads its official forecast track, classifies each
+   point by **Saffir-Simpson category**, and pulls matching **HAFS**
+   (Hurricane Analysis and Forecast System) fields: accumulated
+   precipitation and a period-maximum surface wind.
+3. Masks each field to a **500 km circle** around the storm's forecast
+   position at each step, sums rainfall across steps, and takes the
+   running **maximum wind** seen at each pixel across the *entire* forecast
+   period.
+4. Renders one plot per storm (as a real PNG file, not an embedded image —
+   see the caveats), and gives you a **dropdown** to switch between them.
+
+::: {.callout-important}
+**This dropdown does not recompute anything live.** The site is static —
+there's no server behind it. At render time, this code pre-computes a plot
+for *every* active storm; the dropdown just shows/hides a pre-rendered
+image. What you see is only as fresh as the last render (daily, via cron).
+:::
+
+```{python}
+#| label: setup
+#| output: false
+
+import re
+import shutil
+import time
+import traceback
+import zipfile
+import io
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import requests
+import xarray as xr
+from matplotlib.colors import LinearSegmentedColormap
+from matplotlib.collections import LineCollection
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+from pyproj import Geod
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+# --- Configuration -----------------------------------------------------
+RADIUS_KM = 500.0
+BASINS = {"al": "NA", "ep": "EP", "cp": "CP"}  # NHC's own Atlantic prefix is "al"
+BBOX_PAD_DEG = 10.0
+EXTENT_PAD_DEG = 5.0
+CURRENT_STORMS_URL = "https://www.nhc.noaa.gov/CurrentStorms.json"
+HAFS_MODEL = "hafsa"
+HAFS_PRODUCT = "storm.atm"
+HAFS_MAX_FXX = 126
+GEOD = Geod(ellps="WGS84")
+
+MM_TO_IN = 1.0 / 25.4
+MPS_TO_MPH = 2.236936
+ONE_MIN_SUSTAINED_FACTOR = 1.0 / 0.88  # WMO 10-min -> 1-min rule-of-thumb; not an official NHC value
+
+# Images are written as real PNG files (NOT embedded base64 -- Quarto's
+# preview server tried to treat a base64 data: URI as a filesystem path and
+# crashed with "File name too long"). RUN_TOKEN is appended as a query
+# string on every <img> src so your browser can't serve a stale cached copy
+# of a file that has the same name across renders.
+IMAGE_DIR = Path("storm_images")
+shutil.rmtree(IMAGE_DIR, ignore_errors=True)
+IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+RUN_TOKEN = int(time.time())
+
+CATEGORY_COLORS = {"TD": "#4daf4a", "TS": "#ffcc00", "HU": "#fd8d3c", "MH": "#e31a1c", "Unknown": "#999999"}
+CATEGORY_LABELS = {
+    "TD": "Tropical Depression", "TS": "Tropical Storm",
+    "HU": "Hurricane (Cat 1-2)", "MH": "Major Hurricane (Cat 3+)", "Unknown": "Unknown",
+}
+BROWN_CMAP = LinearSegmentedColormap.from_list("wind_browns", ["#d9b38c", "#8b5a2b", "#3e2412"])
+WIND_CONTOUR_SWATCH = "#8b5a2b"
+
+
+def classify_category(wind_kt):
+    if wind_kt is None or (isinstance(wind_kt, float) and np.isnan(wind_kt)):
+        return "Unknown"
+    if wind_kt < 34:
+        return "TD"
+    if wind_kt < 64:
+        return "TS"
+    if wind_kt < 96:
+        return "HU"
+    return "MH"
+
+
+def geodesic_circle(center_lon, center_lat, radius_km, n=72):
+    az = np.linspace(0, 360, n, endpoint=True)
+    lon2, lat2, _ = GEOD.fwd(np.full(n, center_lon), np.full(n, center_lat),
+                              az, np.full(n, radius_km * 1000.0))
+    return lon2, lat2
+
+
+def circle_mask_km(lon2d, lat2d, center_lon, center_lat, radius_km):
+    n = lon2d.size
+    grid_lons = np.where(lon2d.ravel() > 180, lon2d.ravel() - 360, lon2d.ravel())
+    _, _, dist_m = GEOD.inv(np.full(n, center_lon), np.full(n, center_lat), grid_lons, lat2d.ravel())
+    return (dist_m / 1000.0 <= radius_km).reshape(lon2d.shape)
+
+
+def atcf_storm_id(nhc_id):
+    nhc_id = nhc_id.lower()
+    basin_letter = {"al": "l", "ep": "e", "cp": "c"}[nhc_id[:2]]
+    return f"{nhc_id[2:4]}{basin_letter}"
+
+
+def first_data_var(ds):
+    skip = {"latitude", "longitude", "time", "step", "valid_time",
+            "surface", "isobaricInhPa", "heightAboveGround"}
+    for name in ds.data_vars:
+        if name not in skip:
+            return ds[name]
+    raise RuntimeError(f"No data variable found in dataset: {list(ds.data_vars)}")
+
+
+def best_matching_bucket(H, var_search, end_hour):
+    """Widest available bucket for var_search that ends exactly at end_hour."""
+    try:
+        inv = H.inventory(var_search)
+    except Exception:
+        return None
+    if inv is None or len(inv) == 0:
+        return None
+    pattern = re.compile(r"(\d+)-(\d+) hour")
+    best, best_width = None, -1
+    for _, row in inv.iterrows():
+        m = pattern.search(str(row.get("forecast_time", "")))
+        if not m:
+            continue
+        start, end = int(m.group(1)), int(m.group(2))
+        if end == end_hour and (end - start) > best_width:
+            best, best_width = row["search_this"], end - start
+    return best
+```
+
+## 1. Find all active storms across the three basins
+
+```{python}
+#| label: fetch-storms
+
+resp = requests.get(CURRENT_STORMS_URL, timeout=30)
+resp.raise_for_status()
+active_storms = resp.json().get("activeStorms", [])
+
+selected_storms = [s for s in active_storms if s["id"].lower()[:2] in BASINS]
+for s in selected_storms:
+    s["basin_acronym"] = BASINS[s["id"].lower()[:2]]
+    s["dropdown_label"] = f"{s['name']} ({s['basin_acronym']})"
+
+has_storms = len(selected_storms) > 0
+if has_storms:
+    for s in selected_storms:
+        print(f"Found: {s['dropdown_label']} — advisory {s['forecastTrack']['advNum']}")
+else:
+    print("No active storms in AL/EP/CP right now — nothing to plot today.")
+```
+
+## 2. Per-storm processing
+
+```{python}
+#| label: process-storm-fn
+#| output: false
+
+def process_storm(storm):
+    # --- track ---------------------------------------------------------
+    zip_url = storm["forecastTrack"]["zipFile"]
+    r = requests.get(zip_url, timeout=60)
+    r.raise_for_status()
+    zf = zipfile.ZipFile(io.BytesIO(r.content))
+    pts_candidates = [n for n in zf.namelist() if n.lower().endswith("_pts.shp")]
+    if not pts_candidates:
+        raise RuntimeError(f"No '*_pts.shp' in track archive for {storm['id']}")
+    extract_dir = f"/tmp/nhc_track_{storm['id']}"
+    zf.extractall(extract_dir)
+    track_raw = gpd.read_file(f"{extract_dir}/{pts_candidates[0]}")
+
+    tau_col = "TAU" if "TAU" in track_raw.columns else next(
+        c for c in track_raw.columns if c.upper() == "TAU"
+    )
+    track_raw = track_raw.sort_values(tau_col).reset_index(drop=True)
+
+    wind_col = next(
+        (c for c in ["MAXWIND", "INTENSITY", "VMAX", "WIND"] if c in track_raw.columns), None
+    )
+    wind_kt_series = (
+        track_raw[wind_col].astype(float) if wind_col else pd.Series([np.nan] * len(track_raw))
+    )
+
+    issuance = pd.to_datetime(storm["forecastTrack"]["issuance"])
+    forecast_pts = pd.DataFrame({
+        "tau_h": track_raw[tau_col].astype(float),
+        "lon": track_raw.geometry.x,
+        "lat": track_raw.geometry.y,
+        "wind_kt": wind_kt_series,
+    })
+    forecast_pts["valid_time"] = issuance + pd.to_timedelta(forecast_pts["tau_h"], unit="h")
+
+    init_wind_kt = pd.to_numeric(pd.Series([storm.get("intensity")]), errors="coerce").iloc[0]
+    init_row = pd.DataFrame([{
+        "tau_h": 0.0, "lon": storm["longitudeNumeric"], "lat": storm["latitudeNumeric"],
+        "wind_kt": init_wind_kt, "valid_time": pd.to_datetime(storm["lastUpdate"]),
+    }])
+    track = (
+        pd.concat([init_row, forecast_pts], ignore_index=True)
+        .drop_duplicates(subset="tau_h").sort_values("tau_h").reset_index(drop=True)
+    )
+    track["category"] = track["wind_kt"].apply(classify_category)
+    track["color"] = track["category"].map(CATEGORY_COLORS)
+
+    # --- HAFS cycle ------------------------------------------------------
+    from herbie import Herbie
+
+    storm_id = atcf_storm_id(storm["id"])
+
+    now = datetime.now(timezone.utc)
+    cycle_hour = (now.hour // 6) * 6
+    hafs_cycle = now.replace(hour=cycle_hour, minute=0, second=0, microsecond=0)
+    if (now - hafs_cycle) < timedelta(hours=6):
+        hafs_cycle -= timedelta(hours=6)
+    hafs_cycle_naive = hafs_cycle.replace(tzinfo=None)
+
+    lat_min, lat_max = track["lat"].min() - BBOX_PAD_DEG, track["lat"].max() + BBOX_PAD_DEG
+    lon_min, lon_max = track["lon"].min() - BBOX_PAD_DEG, track["lon"].max() + BBOX_PAD_DEG
+
+    # HAFS's storm.atm output is a MOVING nest -- each forecast hour's file
+    # is centered on the storm's position at that hour, unlike GFS's single
+    # global grid. A fixed crop can end up empty. Instead we define one
+    # common target grid ourselves and interpolate every field onto it.
+    target_lat = None
+    target_lon = None
+
+    def regrid_to_common(da):
+        nonlocal target_lat, target_lon
+        da = da.sortby("latitude").sortby("longitude")
+        lon_vals = da["longitude"].values
+        if lon_vals.size and lon_vals.max() > 180:
+            da = da.assign_coords(longitude=(((da["longitude"] + 180) % 360) - 180)).sortby("longitude")
+
+        if target_lat is None:
+            lat_vals = da["latitude"].values
+            lon_vals2 = da["longitude"].values
+            lat_res = abs(float(lat_vals[1] - lat_vals[0])) if lat_vals.size > 1 else 0.05
+            lon_res = abs(float(lon_vals2[1] - lon_vals2[0])) if lon_vals2.size > 1 else 0.05
+            target_lat = np.arange(lat_min, lat_max, lat_res)
+            target_lon = np.arange(lon_min, lon_max, lon_res)
+
+        out = da.interp(latitude=target_lat, longitude=target_lon, method="linear")
+        if bool(out.isnull().all()):
+            raise RuntimeError(
+                f"Regridding produced no valid data at all (target lat "
+                f"[{lat_min:.2f},{lat_max:.2f}], lon [{lon_min:.2f},{lon_max:.2f}]; "
+                f"native lat [{da['latitude'].values.min():.2f},{da['latitude'].values.max():.2f}], "
+                f"lon [{da['longitude'].values.min():.2f},{da['longitude'].values.max():.2f}])"
+            )
+        return out
+
+    def fxx_for(valid_time):
+        hours = (valid_time - hafs_cycle).total_seconds() / 3600.0
+        return max(int(round(hours)), 0)
+
+    def fetch_precip_window(fxx0, fxx1):
+        """
+        Precip accumulated over (fxx0, fxx1] (mm). Prefers a direct HAFS
+        bucket spanning exactly this window (avoids differencing two
+        "since-init" cumulative fields, which assumes a fixed grid the way
+        GFS has -- HAFS's nest moves, so two cumulative snapshots may not
+        share the same actual coverage, and differencing them can produce
+        bad values where they don't line up).
+        """
+        H1 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx1, storm=storm_id)
+        direct = best_matching_bucket(H1, ":APCP:surface:", fxx1)
+        if direct is not None:
+            m = re.search(r"(\d+)-(\d+) hour", direct)
+            if m and int(m.group(1)) == fxx0:
+                return regrid_to_common(first_data_var(H1.xarray(direct))).clip(min=0)
+
+        a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
+        if fxx0 == 0:
+            return a1.clip(min=0)
+        H0 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx0, storm=storm_id)
+        a0 = regrid_to_common(first_data_var(H0.xarray(f":APCP:surface:0-{fxx0} hour acc fcst")))
+        return (a1 - a0).clip(min=0)
+
+    def fetch_wind_max(fxx):
+        H = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx, storm=storm_id)
+        search = best_matching_bucket(H, ":WIND:10 m above ground:", fxx)
+        if search is None:
+            search = f":WIND:10 m above ground:{max(fxx - 1, 0)}-{fxx} hour max fcst"
+        return regrid_to_common(first_data_var(H.xarray(search)))
+
+    # --- composite across windows ---------------------------------------
+    precip_total = wind_running_max = lon2d = lat2d = None
+    skipped_windows = []
+
+    for i in range(1, len(track)):
+        t0, t1 = track.iloc[i - 1], track.iloc[i]
+        fxx0, fxx1 = fxx_for(t0["valid_time"]), fxx_for(t1["valid_time"])
+
+        if fxx0 > HAFS_MAX_FXX or fxx1 > HAFS_MAX_FXX:
+            skipped_windows.append((t0["tau_h"], t1["tau_h"], fxx0, fxx1, "beyond HAFS max lead time"))
+            continue
+
+        try:
+            precip_window = fetch_precip_window(fxx0, fxx1)
+            wind_window = np.fmax(fetch_wind_max(fxx0), fetch_wind_max(fxx1))
+            print(f"<!-- {storm['id']} window {t0['tau_h']:.0f}h-{t1['tau_h']:.0f}h "
+                  f"(fxx {fxx0}-{fxx1}): precip range "
+                  f"[{float(precip_window.min()):.2f},{float(precip_window.max()):.2f}] mm, "
+                  f"wind range [{float(wind_window.min()):.2f},{float(wind_window.max()):.2f}] m/s -->")
+        except Exception:
+            tb = traceback.format_exc().replace("--", "- -")
+            skipped_windows.append((t0["tau_h"], t1["tau_h"], fxx0, fxx1, tb))
+            continue
+
+        if lon2d is None:
+            lon2d, lat2d = np.meshgrid(precip_window["longitude"], precip_window["latitude"])
+            precip_total = xr.zeros_like(precip_window)
+            wind_running_max = xr.full_like(precip_window, np.nan)
+
+        mask = circle_mask_km(lon2d, lat2d, t1["lon"], t1["lat"], RADIUS_KM)
+        mask_da = xr.DataArray(mask, dims=precip_window.dims, coords=precip_window.coords)
+
+        precip_total = precip_total + precip_window.where(mask_da, 0)
+        wind_masked = wind_window.where(mask_da)
+        wind_running_max = xr.where(
+            wind_running_max.isnull(), wind_masked, np.fmax(wind_running_max, wind_masked.fillna(-np.inf)),
+        )
+
+    if precip_total is None:
+        raise RuntimeError(
+            f"No windows had usable HAFS data for {storm['id']} "
+            f"(all {len(skipped_windows)} window(s) skipped: {skipped_windows})"
+        )
+    for (tau0, tau1, fxx0, fxx1, reason) in skipped_windows:
+        print(f"<!-- {storm['id']}: skipped window {tau0:.0f}h-{tau1:.0f}h (fxx {fxx0}-{fxx1}): {reason} -->")
+
+    wind_running_max = wind_running_max.where(wind_running_max > -np.inf)
+
+    print(f"<!-- {storm['id']} FINAL: precip total range "
+          f"[{float(precip_total.min()):.2f},{float(precip_total.max()):.2f}] mm "
+          f"({float(precip_total.min())*MM_TO_IN:.2f} to {float(precip_total.max())*MM_TO_IN:.2f} in) -->")
+
+    # --- unit conversion --------------------------------------------------
+    precip_in = precip_total * MM_TO_IN
+    wind_mph = wind_running_max * MPS_TO_MPH * ONE_MIN_SUSTAINED_FACTOR
+
+    # --- plot ---------------------------------------------------------
+    # constrained_layout (NOT bbox_inches="tight" on savefig below) is required
+    # here: cartopy's GeoAxes enforces an equal aspect ratio between its lon/lat
+    # extent, and for a storm track with a much larger lat range than lon range
+    # (e.g. a mostly north-south-moving storm) that shrinks the axes to a very
+    # narrow column within the figure. bbox_inches="tight" then computes its
+    # crop from a matplotlib/cartopy tight-bbox calculation that mishandles that
+    # narrow GeoAxes and drops it entirely, leaving only the colorbar in the
+    # saved PNG. constrained_layout performs the layout before draw time and
+    # doesn't have this failure mode.
+    fig, ax = plt.subplots(figsize=(9, 8), subplot_kw={"projection": ccrs.PlateCarree()},
+                            constrained_layout=True)
+
+    lon_plot = xr.where(precip_in["longitude"] > 180, precip_in["longitude"] - 360, precip_in["longitude"])
+    precip_plot = precip_in.where(precip_in > 0)
+    mesh = ax.pcolormesh(lon_plot, precip_in["latitude"], precip_plot,
+                          cmap="YlGnBu", shading="auto", transform=ccrs.PlateCarree())
+    fig.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, label="Accumulated precipitation (in)")
+
+    if np.isfinite(wind_mph.values).any():
+        cs = ax.contour(lon_plot, wind_mph["latitude"], wind_mph,
+                         cmap=BROWN_CMAP, linewidths=1.0, transform=ccrs.PlateCarree())
+        ax.clabel(cs, inline=True, fontsize=7, fmt="%.0f mph")
+
+    for _, row in track.iterrows():
+        clon, clat = geodesic_circle(row["lon"], row["lat"], RADIUS_KM)
+        ax.plot(clon, clat, linestyle="--", linewidth=1.0, alpha=0.7,
+                color=row["color"], transform=ccrs.PlateCarree())
+
+    if len(track) > 1:
+        points = np.array([track["lon"], track["lat"]]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        segment_colors = [CATEGORY_COLORS[c] for c in track["category"].iloc[1:]]
+        lc = LineCollection(segments, colors=segment_colors, linewidths=2.5,
+                             transform=ccrs.PlateCarree(), zorder=5)
+        ax.add_collection(lc)
+    ax.scatter(track["lon"], track["lat"], c=track["color"], s=30,
+               edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=6)
+
+    ax.add_feature(cfeature.NaturalEarthFeature(
+        "physical", "land", "50m", edgecolor="none", facecolor="#f0f0f0"), zorder=0)
+    ax.add_feature(cfeature.NaturalEarthFeature(
+        "physical", "coastline", "50m", edgecolor="black", facecolor="none"), linewidth=0.7, zorder=1)
+    ax.add_feature(cfeature.NaturalEarthFeature(
+        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="black", facecolor="none"),
+        linewidth=0.5, zorder=1)
+
+    ax.set_extent([
+        track["lon"].min() - EXTENT_PAD_DEG, track["lon"].max() + EXTENT_PAD_DEG,
+        track["lat"].min() - EXTENT_PAD_DEG, track["lat"].max() + EXTENT_PAD_DEG,
+    ], crs=ccrs.PlateCarree())
+
+    gl = ax.gridlines(draw_labels=True, linewidth=0.3, color="gray", alpha=0.6, linestyle="--")
+    try:
+        gl.top_labels = False
+        gl.right_labels = False
+    except AttributeError:
+        gl.xlabels_top = False
+        gl.ylabels_right = False
+
+    ax.set_title(
+        f"{storm['name']} ({storm['id'].upper()}) — advisory "
+        f"{storm['forecastTrack']['advNum']} — HAFS-A {hafs_cycle:%Y-%m-%d %HZ}"
+    )
+
+    present_categories = [c for c in ["TD", "TS", "HU", "MH"] if c in track["category"].values]
+    legend_handles = [
+        Line2D([0], [0], color=CATEGORY_COLORS[c], lw=2.5, label=CATEGORY_LABELS[c])
+        for c in present_categories
+    ]
+    legend_handles.append(Patch(facecolor="#3f7fae", label="Rainfall accumulation (fill, in)"))
+    legend_handles.append(Line2D([0], [0], color=WIND_CONTOUR_SWATCH, lw=1.5,
+                                  label="Max sustained wind, ~1-min (contours, mph)"))
+    legend_handles.append(Line2D([0], [0], color="gray", lw=1.0, linestyle="--", label="500 km radius"))
+    ax.legend(handles=legend_handles, loc="lower left", fontsize=7.5)
+
+    # --- save as a real file (not embedded base64) ----------------------
+    slug = re.sub(r"[^a-z0-9]+", "-", storm["id"].lower()).strip("-")
+    image_path = IMAGE_DIR / f"{slug}.png"
+    fig.savefig(image_path, format="png", dpi=140)
+    plt.close(fig)
+
+    return {"slug": slug, "label": storm["dropdown_label"], "img_path": image_path.as_posix()}
+```
+
+## 3. Render every storm and build the dropdown
+
+```{python}
+#| label: render-all
+#| output: asis
+
+panels = []
+DEBUG_RAISE = True  # TEMPORARY: True lets real errors surface via Quarto's own
+                    # traceback reporting. Set False once things work, so one
+                    # bad storm can't take down the whole page in production.
+
+if has_storms:
+    for storm in selected_storms:
+        try:
+            panels.append(process_storm(storm))
+        except Exception:
+            if DEBUG_RAISE:
+                raise
+            tb = traceback.format_exc().replace("--", "- -")
+            label = storm.get("dropdown_label", storm.get("id"))
+            print(f"<!-- Skipped {label}:\n{tb}\n-->")
+
+if not panels:
+    print("<p><strong>No storms could be rendered right now.</strong> "
+          "Either there are no active storms in AL/EP/CP, or all of them "
+          "failed (see HTML comments in the page source, or the terminal "
+          "output, for why).</p>")
+else:
+    html = ['<div style="margin-bottom:1em;">',
+            '<label for="storm-select"><strong>Select a storm:</strong></label> ',
+            '<select id="storm-select" onchange="showStormPanel(this.value)">']
+    for i, p in enumerate(panels):
+        sel = " selected" if i == 0 else ""
+        html.append(f'<option value="storm-{p["slug"]}"{sel}>{p["label"]}</option>')
+    html.append("</select></div>")
+
+    for i, p in enumerate(panels):
+        display = "block" if i == 0 else "none"
+        # RUN_TOKEN cache-busts the image so your browser can't show a
+        # stale copy of a file that has the same name across renders.
+        html.append(
+            f'<div id="storm-{p["slug"]}" class="storm-panel" style="display:{display};">'
+            f'<img src="{p["img_path"]}?v={RUN_TOKEN}" style="max-width:100%;" />'
+            f'</div>'
+        )
+
+    html.append("""
+<script>
+function showStormPanel(id) {
+  document.querySelectorAll('.storm-panel').forEach(function (el) {
+    el.style.display = (el.id === id) ? 'block' : 'none';
+  });
+}
+</script>
+""")
+    print("\n".join(html))
+```
+
+## Method notes & caveats
+
+- **Images are real PNG files, not embedded base64.** An earlier version
+  embedded each plot as a `data:image/png;base64,...` URI directly in the
+  page. Quarto's `preview` dev server tried to resolve that string as a
+  filesystem path and crashed with `File name too long`. Files are now
+  written to `storm_images/` next to this post and referenced by a normal
+  relative path, with a `?v=<timestamp>` query string appended so your
+  browser can't serve a stale cached copy of a file that has the same name
+  across renders — worth knowing about if you ever see an old plot persist
+  despite a successful re-render.
+- **Multi-basin labels**: NHC's own id prefix for the Atlantic is `al`; we
+  display it as **NA** per your request, but filter on `al` internally.
+- **Why HAFS, not HRRR**: HRRR's CONUS-only domain has no data for Central
+  Pacific storms and misses most of the deep tropics. HAFS is NHC's own
+  storm-following hurricane model and covers all three basins.
+- **HAFS's moving nest**: unlike GFS's single global grid, every forecast
+  hour's HAFS file is centered on the storm's position *at that hour*. A
+  fixed-box crop (which worked fine for GFS) can end up empty. This code
+  instead defines one common target grid and `.interp()`s every field onto
+  it, and prints a per-window `<!-- ... precip range ... -->` diagnostic
+  comment (visible in the page's HTML source) so a bad window is easy to
+  spot rather than silently producing an empty or wildly-out-of-range
+  result.
+- **Precip windowing**: prefers a direct HAFS bucket spanning exactly the
+  needed window; falls back to differencing two cumulative fields only if
+  no direct match exists (differencing across a moving nest is the more
+  fragile of the two approaches).
+- **"1-minute sustained" wind**: HAFS's wind field is a model wind, not
+  NHC's official 1-minute convention. The `÷0.88` factor is a standard WMO
+  approximation, not an official NHC intensity estimate.
+- **`DEBUG_RAISE = True`**: currently set so a real failure stops the
+  render with a full traceback (easiest for debugging). Set it to `False`
+  once this is working end-to-end, so one bad storm doesn't take down the
+  whole page in production.
+- **First real run**: check the per-window precip/wind range comments in
+  the page source (or terminal) first if anything looks wrong — they'll
+  show exactly which window (if any) is producing bad numbers, rather than
+  only seeing the final aggregate.
+
+## Keeping this page current
+
+This post is rebuilt automatically every day via the scheduled GitHub Action
+in `.github/workflows/publish.yml` (`cron` trigger).
