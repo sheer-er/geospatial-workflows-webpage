@@ -60,11 +60,11 @@ import numpy as np
 import pandas as pd
 import requests
 import xarray as xr
-from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.collections import LineCollection
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from pyproj import Geod
+from scipy.ndimage import gaussian_filter
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
@@ -98,8 +98,10 @@ CATEGORY_LABELS = {
     "TD": "Tropical Depression", "TS": "Tropical Storm",
     "HU": "Hurricane (Cat 1-2)", "MH": "Major Hurricane (Cat 3+)", "Unknown": "Unknown",
 }
-BROWN_CMAP = LinearSegmentedColormap.from_list("wind_browns", ["#d9b38c", "#8b5a2b", "#3e2412"])
-WIND_CONTOUR_SWATCH = "#8b5a2b"
+WIND_CONTOUR_COLOR = "black"
+WIND_SMOOTH_SIGMA = 3  # gaussian smoothing bandwidth, in grid cells
+LAND_FILL_COLOR = "#e2e2e2"
+LAND_BORDER_COLOR = "#4d4d4d"
 
 
 def classify_category(wind_kt):
@@ -126,6 +128,27 @@ def circle_mask_km(lon2d, lat2d, center_lon, center_lat, radius_km):
     grid_lons = np.where(lon2d.ravel() > 180, lon2d.ravel() - 360, lon2d.ravel())
     _, _, dist_m = GEOD.inv(np.full(n, center_lon), np.full(n, center_lat), grid_lons, lat2d.ravel())
     return (dist_m / 1000.0 <= radius_km).reshape(lon2d.shape)
+
+
+def smooth_for_contour(da, sigma=WIND_SMOOTH_SIGMA):
+    """
+    Gaussian-smooth a 2D field for prettier contour lines, without letting
+    NaN (outside the 500 km composite footprint) bleed a false gradient into
+    the valid region. Standard "fill with 0, smooth the validity mask the
+    same way, divide back out" trick, then re-mask anywhere the smoothed
+    validity weight is too low to trust.
+    """
+    values = da.values
+    valid = np.isfinite(values)
+    if not valid.any():
+        return da
+    filled = np.where(valid, values, 0.0)
+    smoothed = gaussian_filter(filled, sigma=sigma)
+    weight = gaussian_filter(valid.astype(float), sigma=sigma)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        result = smoothed / weight
+    result[weight < 0.2] = np.nan
+    return da.copy(data=result)
 
 
 def atcf_storm_id(nhc_id):
@@ -350,7 +373,16 @@ def process_storm(storm):
         mask = circle_mask_km(lon2d, lat2d, t1["lon"], t1["lat"], RADIUS_KM)
         mask_da = xr.DataArray(mask, dims=precip_window.dims, coords=precip_window.coords)
 
-        precip_total = precip_total + precip_window.where(mask_da, 0)
+        # NaN inside the mask (a target-grid pixel this window's regridded HAFS
+        # nest didn't actually cover -- the moving nest doesn't sit in the same
+        # place at every lead time) must be treated as "this window contributed
+        # zero", not left as NaN: NaN + anything = NaN, so a single window with
+        # a coverage gap at a pixel would otherwise permanently blank that pixel
+        # out of the whole composite, and later lead times (more windows, more
+        # nest drift) have more chances for that to happen -- this is what was
+        # showing up as expanding holes in the rainfall field later in a storm's
+        # life.
+        precip_total = precip_total + precip_window.where(mask_da, 0).fillna(0)
         wind_masked = wind_window.where(mask_da)
         wind_running_max = xr.where(
             wind_running_max.isnull(), wind_masked, np.fmax(wind_running_max, wind_masked.fillna(-np.inf)),
@@ -394,8 +426,9 @@ def process_storm(storm):
     fig.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, label="Accumulated precipitation (in)")
 
     if np.isfinite(wind_mph.values).any():
-        cs = ax.contour(lon_plot, wind_mph["latitude"], wind_mph,
-                         cmap=BROWN_CMAP, linewidths=1.0, transform=ccrs.PlateCarree())
+        wind_smooth = smooth_for_contour(wind_mph)
+        cs = ax.contour(lon_plot, wind_smooth["latitude"], wind_smooth,
+                         colors=WIND_CONTOUR_COLOR, linewidths=0.6, transform=ccrs.PlateCarree())
         ax.clabel(cs, inline=True, fontsize=7, fmt="%.0f mph")
 
     for _, row in track.iterrows():
@@ -414,12 +447,12 @@ def process_storm(storm):
                edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=6)
 
     ax.add_feature(cfeature.NaturalEarthFeature(
-        "physical", "land", "50m", edgecolor="none", facecolor="#f0f0f0"), zorder=0)
+        "physical", "land", "50m", edgecolor="none", facecolor=LAND_FILL_COLOR), zorder=0)
     ax.add_feature(cfeature.NaturalEarthFeature(
-        "physical", "coastline", "50m", edgecolor="black", facecolor="none"), linewidth=0.7, zorder=1)
+        "physical", "coastline", "50m", edgecolor=LAND_BORDER_COLOR, facecolor="none"), linewidth=1.2, zorder=1)
     ax.add_feature(cfeature.NaturalEarthFeature(
-        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="black", facecolor="none"),
-        linewidth=0.5, zorder=1)
+        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor=LAND_BORDER_COLOR, facecolor="none"),
+        linewidth=0.8, zorder=1)
 
     ax.set_extent([
         track["lon"].min() - EXTENT_PAD_DEG, track["lon"].max() + EXTENT_PAD_DEG,
@@ -445,7 +478,7 @@ def process_storm(storm):
         for c in present_categories
     ]
     legend_handles.append(Patch(facecolor="#3f7fae", label="Rainfall accumulation (fill, in)"))
-    legend_handles.append(Line2D([0], [0], color=WIND_CONTOUR_SWATCH, lw=1.5,
+    legend_handles.append(Line2D([0], [0], color=WIND_CONTOUR_COLOR, lw=0.6,
                                   label="Max sustained wind, ~1-min (contours, mph)"))
     legend_handles.append(Line2D([0], [0], color="gray", lw=1.0, linestyle="--", label="500 km radius"))
     ax.legend(handles=legend_handles, loc="lower left", fontsize=7.5)
