@@ -43,18 +43,26 @@ quarto preview
 
 ## Publishing
 
-This repo is set up to auto-publish to **GitHub Pages** via GitHub Actions
-(`.github/workflows/publish.yml`) every time you push to `main`, **and on a
-daily schedule** (`cron: "0 12 * * *"`) so time-sensitive posts — like the
-NHC/GFS tropical cyclone page — stay current without manual re-renders:
+This repo auto-publishes to **GitHub Pages** via GitHub Actions
+(`.github/workflows/publish.yml`). Three triggers, so expensive posts don't
+re-render more often than they need to:
 
-1. Push this repo to GitHub.
-2. In the repo settings, go to **Pages** and set the source to the `docs/`
-   folder... or, since the Action already pushes rendered HTML to the
-   `gh-pages` branch, set the Pages source to that branch instead (simpler —
-   recommended). Either approach works; pick one and stay consistent.
-3. Push a commit — the Action will render the site and publish it.
-   Your site will be live at `https://your-github-username.github.io/geospatial-workflows/`.
+- **Push to `main`**: renders the *entire* site (every post, including the
+  live-data ones) and commits the rendered `docs/` output back to `main`.
+- **Daily cron** (`0 12 * * *`, i.e. 12:00 UTC): renders *only* the NHC/GFS
+  tropical cyclone page, which tracks active storms day to day.
+- **Monthly cron** (`0 13 15 * *`, the 15th of each month): renders *only*
+  the city-temperature-records page, which only needs to refresh once a
+  completed calendar month is available — this one is the slow render
+  (~15-20 min, ~250 station fetches), so it's kept off the daily/push path.
+
+`quarto render` writes to `docs/` (see `_quarto.yml`'s `output-dir: docs`),
+and the workflow commits that folder straight to `main` — **not** a
+separate `gh-pages` branch. So in the repo's **Settings → Pages**, set the
+source to the `docs/` folder on the `main` branch. Push a commit (or
+trigger the workflow manually from the **Actions** tab via
+`workflow_dispatch`) and the site goes live at
+`https://your-github-username.github.io/geospatial-workflows/`.
 
 ## Structure
 

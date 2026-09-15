@@ -1,0 +1,86 @@
+name: Render and publish site
+
+# There was no automation in this repo before this workflow -- the README
+# and a couple of posts described a "daily scheduled rebuild" that didn't
+# actually exist yet. This is that automation, split across three triggers
+# so the expensive posts don't get re-run more often than they need to:
+#
+#   - push to main:        full site render (every post, including both
+#                           live-data ones) -- a push is infrequent enough
+#                           that paying for a full render each time is fine.
+#   - daily cron:           renders ONLY the tropical cyclone outlook post,
+#                           which needs to track active storms day to day.
+#   - monthly cron:         renders ONLY the city-temperature-records post,
+#                           which only summarizes one completed calendar
+#                           month at a time -- daily reruns would just
+#                           re-fetch ~250 station histories (~15-20 min) for
+#                           a same-month answer.
+#
+# workflow_dispatch lets you trigger a full render manually (e.g. from the
+# Actions tab) to verify this works, without waiting for a real schedule.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "0 12 * * *"    # daily, 12:00 UTC -- tropical cyclone outlook post
+    - cron: "0 13 15 * *"   # monthly, the 15th at 13:00 UTC -- temperature-records post
+                            # (mid-month gives the prior month's station data
+                            # a couple of weeks to finalize before it's used)
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-site
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Set up Python env (conda)
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          environment-file: environment.yml
+          activate-environment: geospatial-workflows
+          auto-activate-base: false
+
+      # Point Quarto at the conda env's Python explicitly, rather than
+      # relying on PATH ordering after activation -- more robust across
+      # different runner shells, and matches what was verified locally.
+      - name: Point Quarto at the conda Python
+        shell: bash -el {0}
+        run: echo "QUARTO_PYTHON=$(which python)" >> "$GITHUB_ENV"
+
+      - name: Render full site (push / manual trigger)
+        if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+        run: quarto render
+
+      - name: Render tropical cyclone post only (daily schedule)
+        if: github.event.schedule == '0 12 * * *'
+        run: quarto render posts/2026-09-09-ep-storm-precip-wind/index.qmd
+
+      - name: Render city-temperature-records post only (monthly schedule)
+        if: github.event.schedule == '0 13 15 * *'
+        run: quarto render posts/2026-09-14-major-city-temp-records/index.qmd
+
+      - name: Commit and push rendered site
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs
+          if git diff --cached --quiet; then
+            echo "No changes to publish."
+          else
+            git commit -m "Automated render ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          fi
