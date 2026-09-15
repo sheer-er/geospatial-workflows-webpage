@@ -23,16 +23,20 @@ see the note at the bottom), it:
 
 1. Pulls **every currently active NHC storm** across the **Atlantic**,
    **East Pacific**, and **Central Pacific** basins.
-2. For each one, downloads its official forecast track, classifies each
-   point by **Saffir-Simpson category**, and pulls matching **HAFS**
-   (Hurricane Analysis and Forecast System) fields: accumulated
-   precipitation and a period-maximum surface wind.
-3. Masks each field to a **500 km circle** around the storm's forecast
-   position at each step, sums rainfall across steps, and takes the
-   running **maximum wind** seen at each pixel across the *entire* forecast
-   period.
+2. For each one, downloads its official forecast track and classifies each
+   point by **Saffir-Simpson category**.
+3. Pulls matching **HAFS** (Hurricane Analysis and Forecast System) fields
+   -- accumulated precipitation and a period-maximum surface wind -- masks
+   each field to a **500 km circle** around the storm's forecast position at
+   each step, sums rainfall across steps, and takes the running **maximum
+   wind** seen at each pixel across the *entire* forecast period.
 4. Renders one plot per storm (as a real PNG file, not an embedded image —
    see the caveats), and gives you a **dropdown** to switch between them.
+
+The steps below are broken into the same stages, each ending with a small
+table or plot summarizing what that stage produced -- useful both for
+following along and for spotting a bad storm before it reaches the final
+map.
 
 ::: {.callout-important}
 **This dropdown does not recompute anything live.** The site is static —
@@ -51,8 +55,19 @@ import time
 import traceback
 import zipfile
 import io
+import os
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+
+# Force PROJ (used by pyproj/cartopy/fiona) to read its database from the
+# conda env actually running this notebook (sys.prefix), not whatever
+# PROJ_DATA/PROJ_LIB the parent shell happens to have exported -- e.g. an
+# older PROJ install from a different conda env on the same machine. A
+# mismatched, older proj.db raises "DATABASE.LAYOUT.VERSION.MINOR ... whereas
+# a number >= 6 is expected." Must run before geopandas/pyproj/cartopy import.
+os.environ["PROJ_DATA"] = os.path.join(sys.prefix, "share", "proj")
+os.environ.pop("PROJ_LIB", None)
 
 import geopandas as gpd
 import matplotlib.pyplot as plt
@@ -93,7 +108,9 @@ shutil.rmtree(IMAGE_DIR, ignore_errors=True)
 IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 RUN_TOKEN = int(time.time())
 
-CATEGORY_COLORS = {"TD": "#4daf4a", "TS": "#ffcc00", "HU": "#fd8d3c", "MH": "#e31a1c", "Unknown": "#999999"}
+# Intensity-ordered warm ramp (amber -> orange -> red -> pink), least to
+# most intense -- not NHC's own official category colors.
+CATEGORY_COLORS = {"TD": "#FDA429", "TS": "#FB6107", "HU": "#E4003A", "MH": "#C3008F", "Unknown": "#999999"}
 CATEGORY_LABELS = {
     "TD": "Tropical Depression", "TS": "Tropical Storm",
     "HU": "Hurricane (Cat 1-2)", "MH": "Major Hurricane (Cat 3+)", "Unknown": "Unknown",
@@ -102,6 +119,30 @@ WIND_CONTOUR_COLOR = "black"
 WIND_SMOOTH_SIGMA = 3  # gaussian smoothing bandwidth, in grid cells
 LAND_FILL_COLOR = "#e2e2e2"
 LAND_BORDER_COLOR = "#4d4d4d"
+
+DEBUG_RAISE = False  # False: a storm that fails at any stage below (e.g. no
+                     # HAFS data yet for a brand-new invest) is skipped for
+                     # the remaining stages -- reason logged as an HTML
+                     # comment -- rather than taking down the whole page.
+                     # Set True temporarily while chasing a specific failure
+                     # to get Quarto's own full-traceback error reporting.
+failures = []  # (label, traceback) pairs accumulated across every stage
+
+
+def run_stage(label, fn):
+    """
+    Run a zero-argument callable for one storm at one pipeline stage,
+    honoring DEBUG_RAISE. Returns fn()'s result, or None if this storm
+    failed at this stage (and should be dropped from later stages).
+    """
+    try:
+        return fn()
+    except Exception:
+        if DEBUG_RAISE:
+            raise
+        tb = traceback.format_exc().replace("--", "- -")
+        failures.append((label, tb))
+        return None
 
 
 def classify_category(wind_kt):
@@ -208,14 +249,26 @@ else:
     print("No active storms in AL/EP/CP right now — nothing to plot today.")
 ```
 
-## 2. Per-storm processing
+## 2. Load each storm's forecast track and matching HAFS cycle
 
 ```{python}
-#| label: process-storm-fn
-#| output: false
+#| label: load-tracks
 
-def process_storm(storm):
-    # --- track ---------------------------------------------------------
+from herbie import Herbie
+from herbie.models.hafs import S as hafs_storms
+
+# The HAFS cycle we pull guidance from is the same for every storm -- the
+# latest 6-hourly cycle (00/06/12/18Z) that should be complete by now.
+now = datetime.now(timezone.utc)
+cycle_hour = (now.hour // 6) * 6
+hafs_cycle = now.replace(hour=cycle_hour, minute=0, second=0, microsecond=0)
+if (now - hafs_cycle) < timedelta(hours=6):
+    hafs_cycle -= timedelta(hours=6)
+hafs_cycle_naive = hafs_cycle.replace(tzinfo=None)
+
+
+def load_track(storm):
+    """Download a storm's official NHC forecast track and merge in its current position."""
     zip_url = storm["forecastTrack"]["zipFile"]
     r = requests.get(zip_url, timeout=60)
     r.raise_for_status()
@@ -260,35 +313,67 @@ def process_storm(storm):
     track["category"] = track["wind_kt"].apply(classify_category)
     track["color"] = track["category"].map(CATEGORY_COLORS)
 
-    # --- HAFS cycle ------------------------------------------------------
-    from herbie import Herbie
-    from herbie.models.hafs import S as hafs_storms
-
-    storm_id = atcf_storm_id(storm["id"])
+    atcf_id = atcf_storm_id(storm["id"])
 
     # Herbie resolves the HAFS storm-following file path by scraping NOMADS's
     # live "active storm" registry for this storm's name; a brand-new/just
-    # -designated storm (like an "XX-E" invest that hasn't been picked up
-    # yet) isn't in that registry until NOMADS/HAFS catch up, and Herbie's
-    # own error for that case is an opaque AttributeError deep in its HAFS
-    # template. Check for it up front so a missing storm fails once, fast,
-    # with a clear reason -- instead of the per-window loop below retrying
-    # (and failing) the same way for every single forecast window.
-    if hafs_storms.id_to_name.get(storm_id) is None:
+    # -designated storm isn't in that registry until NOMADS/HAFS catch up,
+    # and Herbie's own error for that case is an opaque AttributeError deep
+    # in its HAFS template. Check for it up front with a clear message,
+    # instead of every fetch in the next stage failing the same opaque way.
+    if hafs_storms.id_to_name.get(atcf_id) is None:
         raise RuntimeError(
             f"HAFS has no storm-following guidance for {storm['id']} (ATCF id "
-            f"'{storm_id}') yet -- it isn't in NOMADS's active HAFS storm "
+            f"'{atcf_id}') yet -- it isn't in NOMADS's active HAFS storm "
             f"registry (hafs/prod/inphfsa listing) right now. This is normal "
             f"for a storm that was just designated; it should appear once "
             f"NHC/NOMADS register it."
         )
 
-    now = datetime.now(timezone.utc)
-    cycle_hour = (now.hour // 6) * 6
-    hafs_cycle = now.replace(hour=cycle_hour, minute=0, second=0, microsecond=0)
-    if (now - hafs_cycle) < timedelta(hours=6):
-        hafs_cycle -= timedelta(hours=6)
-    hafs_cycle_naive = hafs_cycle.replace(tzinfo=None)
+    return {"track": track, "atcf_id": atcf_id}
+
+
+storms_by_id = {}
+for storm in selected_storms:
+    result = run_stage(storm["dropdown_label"], lambda storm=storm: load_track(storm))
+    if result is not None:
+        storms_by_id[storm["id"]] = {"storm": storm, **result}
+
+track_summary_rows = []
+for entry in storms_by_id.values():
+    track = entry["track"]
+    if track["wind_kt"].notna().any():
+        peak_category = track.loc[track["wind_kt"].idxmax(), "category"]
+    else:
+        peak_category = "Unknown"
+    track_summary_rows.append({
+        "Storm": entry["storm"]["dropdown_label"],
+        "HAFS cycle": f"{hafs_cycle:%Y-%m-%d %HZ}",
+        "Track points": len(track),
+        "Forecast length (h)": int(track["tau_h"].max()),
+        "Peak category so far": CATEGORY_LABELS[peak_category],
+    })
+
+track_summary = (
+    pd.DataFrame(track_summary_rows) if track_summary_rows
+    else pd.DataFrame({"note": ["No storm tracks could be loaded."]})
+)
+track_summary
+```
+
+## 3. Fetch matching HAFS fields and composite them into each storm's outlook
+
+```{python}
+#| label: composite-fields
+
+def composite_storm_fields(entry):
+    """
+    Fetch HAFS precip/wind for every window along the track, mask each to a
+    500 km circle around that window's forecast position, and combine them:
+    rainfall summed across windows, wind as the running max seen at each
+    pixel across the whole forecast period.
+    """
+    storm, track, atcf_id = entry["storm"], entry["track"], entry["atcf_id"]
 
     lat_min, lat_max = track["lat"].min() - BBOX_PAD_DEG, track["lat"].max() + BBOX_PAD_DEG
     lon_min, lon_max = track["lon"].min() - BBOX_PAD_DEG, track["lon"].max() + BBOX_PAD_DEG
@@ -338,7 +423,7 @@ def process_storm(storm):
         share the same actual coverage, and differencing them can produce
         bad values where they don't line up).
         """
-        H1 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx1, storm=storm_id)
+        H1 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx1, storm=atcf_id, verbose=False)
         direct = best_matching_bucket(H1, ":APCP:surface:", fxx1)
         if direct is not None:
             m = re.search(r"(\d+)-(\d+) hour", direct)
@@ -348,18 +433,17 @@ def process_storm(storm):
         a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
         if fxx0 == 0:
             return a1.clip(min=0)
-        H0 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx0, storm=storm_id)
+        H0 = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx0, storm=atcf_id, verbose=False)
         a0 = regrid_to_common(first_data_var(H0.xarray(f":APCP:surface:0-{fxx0} hour acc fcst")))
         return (a1 - a0).clip(min=0)
 
     def fetch_wind_max(fxx):
-        H = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx, storm=storm_id)
+        H = Herbie(hafs_cycle_naive, model=HAFS_MODEL, product=HAFS_PRODUCT, fxx=fxx, storm=atcf_id, verbose=False)
         search = best_matching_bucket(H, ":WIND:10 m above ground:", fxx)
         if search is None:
             search = f":WIND:10 m above ground:{max(fxx - 1, 0)}-{fxx} hour max fcst"
         return regrid_to_common(first_data_var(H.xarray(search)))
 
-    # --- composite across windows ---------------------------------------
     precip_total = wind_running_max = lon2d = lat2d = None
     skipped_windows = []
 
@@ -420,11 +504,92 @@ def process_storm(storm):
           f"[{float(precip_total.min()):.2f},{float(precip_total.max()):.2f}] mm "
           f"({float(precip_total.min())*MM_TO_IN:.2f} to {float(precip_total.max())*MM_TO_IN:.2f} in) -->")
 
-    # --- unit conversion --------------------------------------------------
-    precip_in = precip_total * MM_TO_IN
-    wind_mph = wind_running_max * MPS_TO_MPH * ONE_MIN_SUSTAINED_FACTOR
+    return {
+        "precip_total": precip_total,
+        "wind_running_max": wind_running_max,
+        "windows_used": (len(track) - 1) - len(skipped_windows),
+        "windows_skipped": len(skipped_windows),
+    }
 
-    # --- plot ---------------------------------------------------------
+
+for sid, entry in list(storms_by_id.items()):
+    result = run_stage(entry["storm"]["dropdown_label"], lambda entry=entry: composite_storm_fields(entry))
+    if result is None:
+        del storms_by_id[sid]
+    else:
+        entry.update(result)
+
+composite_summary_rows = []
+for entry in storms_by_id.values():
+    precip, wind = entry["precip_total"], entry["wind_running_max"]
+    rained_on = precip.where(precip > 0)
+    composite_summary_rows.append({
+        "Storm": entry["storm"]["dropdown_label"],
+        "Windows used": entry["windows_used"],
+        "Windows skipped": entry["windows_skipped"],
+        "Max precip (mm)": round(float(precip.max()), 1),
+        "Mean precip where > 0 (mm)": round(float(rained_on.mean()), 1) if bool((precip > 0).any()) else 0.0,
+        "Max wind (m/s)": round(float(wind.max()), 1) if bool(np.isfinite(wind.values).any()) else None,
+    })
+
+composite_summary = (
+    pd.DataFrame(composite_summary_rows) if composite_summary_rows
+    else pd.DataFrame({"note": ["No storms had usable composite HAFS data."]})
+)
+composite_summary
+```
+
+## 4. Convert units and compare distributions
+
+```{python}
+#| label: convert-and-summarize
+
+for entry in storms_by_id.values():
+    entry["precip_in"] = entry["precip_total"] * MM_TO_IN
+    entry["wind_mph"] = entry["wind_running_max"] * MPS_TO_MPH * ONE_MIN_SUSTAINED_FACTOR
+
+fig, axes = plt.subplots(1, 2, figsize=(9, 3.5), constrained_layout=True)
+
+for entry in storms_by_id.values():
+    label = entry["storm"]["dropdown_label"]
+
+    precip_vals = entry["precip_in"].values
+    precip_vals = precip_vals[np.isfinite(precip_vals) & (precip_vals > 0)]
+    if precip_vals.size:
+        sorted_vals = np.sort(precip_vals)
+        axes[0].plot(sorted_vals, np.arange(1, sorted_vals.size + 1) / sorted_vals.size, label=label)
+
+    wind_vals = entry["wind_mph"].values
+    wind_vals = wind_vals[np.isfinite(wind_vals)]
+    if wind_vals.size:
+        sorted_vals = np.sort(wind_vals)
+        axes[1].plot(sorted_vals, np.arange(1, sorted_vals.size + 1) / sorted_vals.size, label=label)
+
+axes[0].set_xlabel("Accumulated precipitation (in)")
+axes[0].set_ylabel("Cumulative fraction of pixels")
+axes[0].set_title("Rainfall CDF (footprint pixels with > 0 in)")
+axes[1].set_xlabel("Max sustained wind (mph)")
+axes[1].set_title("Wind CDF (footprint pixels)")
+for ax in axes:
+    ax.grid(alpha=0.3)
+    if storms_by_id:
+        ax.legend(fontsize=7)
+```
+
+These curves are a quick sanity check on each storm's plotted field before
+committing to the (slower) map render below: a curve that's nearly vertical
+near zero, or that has a long flat tail out to extreme values, is worth a
+look at the per-window diagnostic comments in the page source.
+
+## 5. Render each storm's map
+
+```{python}
+#| label: render-maps
+
+def render_storm_plot(entry):
+    storm, track = entry["storm"], entry["track"]
+    precip_in, wind_mph = entry["precip_in"], entry["wind_mph"]
+
     # constrained_layout (NOT bbox_inches="tight" on savefig below) is required
     # here: cartopy's GeoAxes enforces an equal aspect ratio between its lon/lat
     # extent, and for a storm track with a much larger lat range than lon range
@@ -508,31 +673,26 @@ def process_storm(storm):
     plt.close(fig)
 
     return {"slug": slug, "label": storm["dropdown_label"], "img_path": image_path.as_posix()}
+
+
+panels = []
+for sid, entry in storms_by_id.items():
+    result = run_stage(entry["storm"]["dropdown_label"], lambda entry=entry: render_storm_plot(entry))
+    if result is not None:
+        panels.append(result)
+
+panel_summary = (
+    pd.DataFrame([{"Storm": p["label"], "Image file": p["img_path"]} for p in panels]) if panels
+    else pd.DataFrame({"note": ["No storm maps could be rendered."]})
+)
+panel_summary
 ```
 
-## 3. Render every storm and build the dropdown
+## 6. Build the storm-picker dropdown
 
 ```{python}
 #| label: render-all
 #| output: asis
-
-panels = []
-DEBUG_RAISE = False  # False: a storm that fails (e.g. no HAFS data yet for a
-                     # brand-new invest) is skipped -- reason logged as an
-                     # HTML comment -- rather than taking down the whole page.
-                     # Set True temporarily while debugging a specific failure
-                     # to get Quarto's own traceback reporting instead.
-
-if has_storms:
-    for storm in selected_storms:
-        try:
-            panels.append(process_storm(storm))
-        except Exception:
-            if DEBUG_RAISE:
-                raise
-            tb = traceback.format_exc().replace("--", "- -")
-            label = storm.get("dropdown_label", storm.get("id"))
-            print(f"<!-- Skipped {label}:\n{tb}\n-->")
 
 if not panels:
     print("<p><strong>No storms could be rendered right now.</strong> "
@@ -568,6 +728,9 @@ function showStormPanel(id) {
 </script>
 """)
     print("\n".join(html))
+
+for label, tb in failures:
+    print(f"<!-- Skipped {label}:\n{tb}\n-->")
 ```
 
 ## Method notes & caveats
@@ -601,11 +764,24 @@ function showStormPanel(id) {
 - **"1-minute sustained" wind**: HAFS's wind field is a model wind, not
   NHC's official 1-minute convention. The `÷0.88` factor is a standard WMO
   approximation, not an official NHC intensity estimate.
-- **`DEBUG_RAISE = False`**: a storm that fails (e.g. no HAFS storm-following
-  guidance published yet for a brand-new invest) is skipped, with the reason
-  logged as an HTML comment in the page source, rather than taking down the
-  whole page. Flip it to `True` temporarily while chasing a specific failure
-  to get Quarto's own full-traceback error reporting instead.
+- **`DEBUG_RAISE = False`**: a storm that fails at any stage (e.g. no HAFS
+  storm-following guidance published yet for a brand-new invest) is dropped
+  from the remaining stages, with the reason logged as an HTML comment in
+  the page source, rather than taking down the whole page. Flip it to
+  `True` temporarily while chasing a specific failure to get Quarto's own
+  full-traceback error reporting instead.
+- **Herbie's own console output is suppressed** (`Herbie(..., verbose=False)`)
+  -- by default it prints a `✅ Found ┊ ...` line for every GRIB/IDX file it
+  checks, which is useful interactively but was showing up as raw,
+  ANSI-coded noise in this page's rendered output. The per-window
+  `<!-- ... -->` diagnostic comments above are this page's own, deliberately
+  HTML-commented-out replacement.
+- **`PROJ_DATA` is set explicitly** at the top of the setup cell, pointed at
+  the running Python environment's own PROJ install (`sys.prefix`). Without
+  this, a `PROJ_DATA`/`PROJ_LIB` variable inherited from the shell (e.g.
+  pointing at an older PROJ install in a different conda env) can make
+  pyproj/cartopy/fiona load a mismatched, too-old `proj.db` and fail with a
+  `DATABASE.LAYOUT.VERSION.MINOR` error.
 - **First real run**: check the per-window precip/wind range comments in
   the page source (or terminal) first if anything looks wrong — they'll
   show exactly which window (if any) is producing bad numbers, rather than
