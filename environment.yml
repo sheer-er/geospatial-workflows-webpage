@@ -22,3 +22,4 @@ dependencies:
   - yaml
   - pip:
       - herbie-data
+      - meteostat>=2.1

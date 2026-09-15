@@ -1,0 +1,636 @@
+---
+title: "Did Your City Set a Record Yesterday? Tracking 50 Major US Cities Against Their All-Time Highs"
+description: >
+  Every day, pulls the most recent officially reported daily high temperature
+  for the 50 most populous US cities, compares each one against that
+  station's own all-time high for that calendar day, and maps how close
+  every city came to (or how far past) its record.
+date: 2026-09-14
+categories: [climate, temperature-records, meteostat, extreme-heat]
+jupyter: python3
+execute:
+  freeze: false   # always re-run at render time, so scheduled rebuilds pull fresh data
+resources:
+  - record_images/*.png   # generated at render time via raw <img> tags, not markdown
+                           # image syntax, so Quarto won't auto-discover them -- this
+                           # forces them to be copied into the output dir
+---
+
+## What this page does
+
+Every time this page is rendered (including the scheduled daily rebuild —
+see the note at the bottom), it:
+
+1. Takes a fixed list of the **50 most populous US cities** (a standard proxy
+   for "most influential" — see the caveats section for why population,
+   not some other ranking, was used).
+2. For each city, finds the **most complete nearby weather station** (the
+   candidate with the longest actual history, not just the closest one) and
+   pulls its **most recently reported daily maximum temperature** — in
+   practice, this is usually "yesterday," but station reporting lags by a
+   few days at some sites, so the actual date used is shown per city.
+3. Compares that reading against the **all-time record high for that
+   station on that same calendar day** (the warmest that station has ever
+   recorded on that specific month/day, across every other year in its
+   digitized daily record).
+4. Replays the same comparison for **every day since January 2020** across
+   all resolved cities, and keeps a **running tally** — broken out by year —
+   of how many city-days set/tied a record or came within 3 degrees.
+5. Plots all 50 cities on a **US map**, colored by how each city's most
+   recent reading compared to its record.
+
+::: {.callout-important}
+**This is a live, self-refreshing page, not a one-time snapshot.** There's
+no server behind it — it's a static site. At render time, this code
+re-fetches real station data and recomputes everything below. What you see
+is only as fresh as the last render (daily, via cron).
+:::
+
+```{python}
+#| label: setup
+#| output: false
+
+import shutil
+import time
+import traceback
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import cartopy.crs as ccrs
+import cartopy.feature as cfeature
+
+import meteostat
+from meteostat import Point, Parameter, UnitSystem
+
+# Meteostat blocks any single daily request spanning > 30 years by default
+# (it's a safety rail against accidentally downloading someone's entire
+# bulk archive). We deliberately want the full digitized daily record for
+# each station so "record for this calendar day" means the station's whole
+# history, not just the last 30 years -- so this is turned off here on
+# purpose, not left on by accident.
+meteostat.config.block_large_requests = False
+
+# --- Configuration -----------------------------------------------------
+# The 50 most populous US cities (~2023-2024 Census estimates) as a
+# standard, reproducible stand-in for "most influential" -- see the
+# Method notes for why population (not e.g. GDP or media reach) was used.
+CITIES = [
+    ("New York", "NY", 40.7128, -74.0060), ("Los Angeles", "CA", 34.0522, -118.2437),
+    ("Chicago", "IL", 41.8781, -87.6298), ("Houston", "TX", 29.7604, -95.3698),
+    ("Phoenix", "AZ", 33.4484, -112.0740), ("Philadelphia", "PA", 39.9526, -75.1652),
+    ("San Antonio", "TX", 29.4241, -98.4936), ("San Diego", "CA", 32.7157, -117.1611),
+    ("Dallas", "TX", 32.7767, -96.7970), ("Jacksonville", "FL", 30.3322, -81.6557),
+    ("Austin", "TX", 30.2672, -97.7431), ("Fort Worth", "TX", 32.7555, -97.3308),
+    ("San Jose", "CA", 37.3382, -121.8863), ("Columbus", "OH", 39.9612, -82.9988),
+    ("Charlotte", "NC", 35.2271, -80.8431), ("Indianapolis", "IN", 39.7684, -86.1581),
+    ("San Francisco", "CA", 37.7749, -122.4194), ("Seattle", "WA", 47.6062, -122.3321),
+    ("Denver", "CO", 39.7392, -104.9903), ("Oklahoma City", "OK", 35.4676, -97.5164),
+    ("Nashville", "TN", 36.1627, -86.7816), ("El Paso", "TX", 31.7619, -106.4850),
+    ("Washington", "DC", 38.9072, -77.0369), ("Las Vegas", "NV", 36.1699, -115.1398),
+    ("Boston", "MA", 42.3601, -71.0589), ("Detroit", "MI", 42.3314, -83.0458),
+    ("Portland", "OR", 45.5152, -122.6784), ("Louisville", "KY", 38.2527, -85.7585),
+    ("Memphis", "TN", 35.1495, -90.0490), ("Baltimore", "MD", 39.2904, -76.6122),
+    ("Milwaukee", "WI", 43.0389, -87.9065), ("Albuquerque", "NM", 35.0844, -106.6504),
+    ("Tucson", "AZ", 32.2226, -110.9747), ("Fresno", "CA", 36.7378, -119.7871),
+    ("Sacramento", "CA", 38.5816, -121.4944), ("Mesa", "AZ", 33.4152, -111.8315),
+    ("Kansas City", "MO", 39.0997, -94.5786), ("Atlanta", "GA", 33.7490, -84.3880),
+    ("Omaha", "NE", 41.2565, -95.9345), ("Colorado Springs", "CO", 38.8339, -104.8214),
+    ("Raleigh", "NC", 35.7796, -78.6382), ("Long Beach", "CA", 33.7701, -118.1937),
+    ("Virginia Beach", "VA", 36.8529, -75.9780), ("Miami", "FL", 25.7617, -80.1918),
+    ("Oakland", "CA", 37.8044, -122.2712), ("Minneapolis", "MN", 44.9778, -93.2650),
+    ("Tulsa", "OK", 36.1540, -95.9928), ("Bakersfield", "CA", 35.3733, -119.0187),
+    ("Wichita", "KS", 37.6872, -97.3301), ("Arlington", "TX", 32.7357, -97.1081),
+]
+
+HIST_START = datetime(1885, 1, 1)   # predates nearly every US first-order station's digitized record
+STATION_SEARCH_RADIUS_M = 120_000   # 120 km -- wide enough to fall back to a long-running regional
+                                     # airport station if the closest site turns out to be short-lived
+N_CANDIDATE_STATIONS = 5            # nearest station first; fall back to the next-nearest if it's unusable
+MIN_RECORD_YEARS = 20               # a station with less history than this can't give a credible "record" --
+                                     # a "record" based on only a handful of years is misleading, not just imprecise
+MAX_STALENESS_DAYS = 21             # how far back we'll accept a station's "most recent" reading --
+                                     # set generously (3 weeks) on purpose: the long-running official
+                                     # stations that make the best *record* sources tend to also have
+                                     # the slowest final QC/reporting lag (observed ~8-9 days for
+                                     # several), so a tight staleness cutoff was silently disqualifying
+                                     # exactly the stations this page most wants to use, in favor of
+                                     # faster-reporting but much shorter-history alternatives
+N_WORKERS = 10                      # station fetches are network-bound (calls out to Meteostat's bulk data),
+                                     # so fetching them concurrently is a ~5x wall-clock win over serial
+
+# The nominal date this page is about -- "yesterday" in UTC. Some stations'
+# daily summaries lag a few days behind real time (their upstream QC hasn't
+# finished yet), so a given city's actual "date used" may be a bit older;
+# see the "Date used" column in the results table and the caveats section.
+NOW_UTC = datetime.now(timezone.utc)
+TARGET_DATE = (NOW_UTC - timedelta(days=1)).date()
+FETCH_END = datetime.combine(TARGET_DATE, datetime.min.time())
+
+# How far back the back-calculated running tally goes. Every render walks
+# every city's *entire* daily history day by day from this date through
+# TARGET_DATE (using the expanding "prior record" defined below), so this
+# isn't a separate fetch -- it reuses the same full history pulled above.
+TALLY_START_DATE = datetime(2020, 1, 1).date()
+MIN_PRIOR_SAMPLES = 15   # a calendar day's "record" needs at least this many earlier
+                         # years behind it before a reading is compared against it at all
+
+# Difference (actual - record, °F) color bins for the map, ordered from
+# "farthest below the record" to "set a new record" -- a cool-to-warm ramp
+# where blue means "well short of the record" and red means "at or above it."
+DIFF_BINS = [
+    (-40, "#08306b", "≥ 40°F below record"),
+    (-30, "#2171b5", "30-40°F below record"),
+    (-20, "#6baed6", "20-30°F below record"),
+    (-10, "#969696", "10-20°F below record"),
+    (-5,  "#fc9272", "5-10°F below record"),
+    (0,   "#de2d26", "Within 5°F of / at record"),
+    (np.inf, "#67000d", "Above record (new record)"),
+]
+
+IMAGE_DIR = Path("record_images")
+shutil.rmtree(IMAGE_DIR, ignore_errors=True)
+IMAGE_DIR.mkdir(parents=True, exist_ok=True)
+RUN_TOKEN = int(time.time())
+
+DEBUG_RAISE = False  # False: a city that fails at any stage (bad station data,
+                     # no usable candidate, etc.) is dropped with the reason
+                     # logged, rather than taking down the whole page. Set
+                     # True temporarily while chasing a specific failure.
+failures = []
+
+
+def run_stage(label, fn):
+    try:
+        return fn()
+    except Exception:
+        if DEBUG_RAISE:
+            raise
+        tb = traceback.format_exc().replace("--", "- -")
+        failures.append((label, tb))
+        return None
+
+
+def diff_bucket(diff_f):
+    """Map a (actual - record) °F difference onto the DIFF_BINS color ramp."""
+    for upper, color, label in DIFF_BINS:
+        if diff_f <= upper:
+            return color, label
+    return DIFF_BINS[-1][1], DIFF_BINS[-1][2]
+
+
+TALLY_CATEGORIES = ["Above record", "At record (tied)", "Within 3°F of record"]
+
+
+def tally_category(diff_f):
+    """
+    Mutually-exclusive running-tally buckets (distinct from the finer
+    DIFF_BINS used for map coloring): a city-day counts toward exactly one
+    of these three.
+    """
+    if diff_f > 1:
+        return "Above record"
+    if diff_f >= -1:
+        return "At record (tied)"
+    if diff_f >= -3:
+        return "Within 3°F of record"
+    return None  # not close enough to tally
+```
+
+## 1. Find each city's nearest usable weather station
+
+```{python}
+#| label: find-stations
+
+def find_candidate_stations(lat, lon):
+    df = meteostat.stations.nearby(Point(lat, lon), radius=STATION_SEARCH_RADIUS_M,
+                                    limit=N_CANDIDATE_STATIONS)
+    return list(df.index)
+
+
+city_candidates = {}
+for name, state, lat, lon in CITIES:
+    label = f"{name}, {state}"
+    candidates = run_stage(f"{label} (station lookup)",
+                            lambda lat=lat, lon=lon: find_candidate_stations(lat, lon))
+    city_candidates[label] = candidates or []
+
+station_lookup_summary = pd.DataFrame([
+    {"City": label, "Candidate stations (nearest first)": ", ".join(ids) if ids else "none found"}
+    for label, ids in city_candidates.items()
+])
+station_lookup_summary.head(10)
+```
+
+## 2. Pull each station's full daily-max-temperature history
+
+Fetched in parallel — each station's history is an independent network call,
+and there's no reason to wait for one before starting the next.
+
+```{python}
+#| label: fetch-histories
+
+def fetch_station_tmax(station_id):
+    ts = meteostat.daily(station_id, HIST_START, FETCH_END, parameters=[Parameter.TMAX])
+    df = ts.fetch(units=UnitSystem.IMPERIAL)
+    if df is None or df.empty:
+        return None
+    return df["tmax"].dropna()
+
+
+# Fetch every candidate for every city (not just the nearest one) so the
+# best-populated station can be picked rather than just the closest one
+# that clears a minimum bar. This matters: nearby() returns candidates by
+# *distance*, and the physically closest site is sometimes a short-lived or
+# sparsely-reporting station (e.g. a personal/community site) sitting right
+# next to a much longer-running official airport station a few km further
+# out. Picking "nearest that passes" over "most complete overall" was
+# initially producing "records" built on a couple sparse decades instead of
+# a station's full, well-populated history -- a bug caught by manually
+# comparing candidate station row counts for a test city, not something
+# any of the individual per-station checks below would have caught on
+# their own since a sparse station can still individually look "valid."
+all_candidate_ids = sorted({sid for ids in city_candidates.values() for sid in ids})
+station_series = {}
+with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
+    futures = {pool.submit(fetch_station_tmax, sid): sid for sid in all_candidate_ids}
+    for future in futures:
+        sid = futures[future]
+        station_series[sid] = run_stage(f"station {sid} (fetch)", future.result)
+
+
+def resolve_city(label, candidates):
+    """
+    Among this city's already-fetched candidate stations, pick whichever
+    has the most actual years of history (not just whichever is nearest)
+    and is recent enough to stand in for "yesterday." Returns None (city
+    dropped, reason logged) if none qualify.
+    """
+    reasons = []
+    scored = []
+    for station_id in candidates:
+        series = station_series.get(station_id)
+        if series is None or series.empty:
+            reasons.append(f"{station_id}: no data returned")
+            continue
+
+        n_years = series.index.year.nunique()
+        if n_years < MIN_RECORD_YEARS:
+            reasons.append(f"{station_id}: only {n_years} year(s) of history")
+            continue
+
+        latest_available = series.index.max().date()
+        if (TARGET_DATE - latest_available).days > MAX_STALENESS_DAYS:
+            reasons.append(
+                f"{station_id}: most recent reading ({latest_available}) is more "
+                f"than {MAX_STALENESS_DAYS} days before target date {TARGET_DATE}"
+            )
+            continue
+
+        scored.append((n_years, station_id, series))
+
+    if not scored:
+        raise RuntimeError(f"No usable candidate station for {label}: " + "; ".join(reasons))
+
+    # Most years of history wins, not nearest distance.
+    n_years, station_id, series = max(scored, key=lambda t: t[0])
+
+    date_used = TARGET_DATE if TARGET_DATE in series.index.date else series.index.max().date()
+    actual_f = float(series.loc[series.index.date == date_used].iloc[0])
+
+    same_calendar_day = series[
+        (series.index.month == date_used.month) & (series.index.day == date_used.day)
+    ]
+    same_calendar_day = same_calendar_day[same_calendar_day.index.date != date_used]
+    if same_calendar_day.empty:
+        raise RuntimeError(
+            f"No usable candidate station for {label}: best candidate {station_id} has "
+            f"no other year's data for {date_used.month}/{date_used.day}"
+        )
+
+    return {
+        "station": station_id, "date_used": date_used, "actual_f": actual_f,
+        "record_f": float(same_calendar_day.max()), "n_years_compared": len(same_calendar_day),
+        "series": series,  # kept for the back-calculated daily tally below -- avoids re-fetching
+    }
+
+
+results = {}
+with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
+    futures = {
+        pool.submit(resolve_city, label, city_candidates[label]): label
+        for name, state, lat, lon in CITIES
+        for label in [f"{name}, {state}"]
+    }
+    for future in futures:
+        label = futures[future]
+        result = run_stage(label, future.result)
+        if result is not None:
+            results[label] = {**result, "diff_f": round(result["actual_f"] - result["record_f"], 1)}
+
+print(f"Resolved {len(results)} / {len(CITIES)} cities.")
+if failures:
+    print(f"{len(failures)} city/stage combination(s) failed -- see HTML source comments for details.")
+```
+
+## 3. Build yesterday's results table
+
+```{python}
+#| label: build-table
+
+city_meta = {f"{name}, {state}": (state, lat, lon) for name, state, lat, lon in CITIES}
+
+rows = []
+for label, r in results.items():
+    state, lat, lon = city_meta[label]
+    color, bin_label = diff_bucket(r["diff_f"])
+    rows.append({
+        "City": label, "Station": r["station"], "lat": lat, "lon": lon,
+        "Date used": r["date_used"], "Actual high (°F)": round(r["actual_f"], 1),
+        "Record high (°F)": round(r["record_f"], 1), "Diff vs. record (°F)": r["diff_f"],
+        "Map category": bin_label, "Map color": color,
+        "Tally category": tally_category(r["diff_f"]),
+        "Years compared": r["n_years_compared"],
+    })
+
+results_df = pd.DataFrame(rows).sort_values("Diff vs. record (°F)", ascending=False).reset_index(drop=True)
+
+yesterday_tally_counts = (
+    results_df["Tally category"].value_counts().reindex(TALLY_CATEGORIES, fill_value=0)
+)
+yesterday_tally_table = (
+    yesterday_tally_counts.rename("Number of cities").reset_index().rename(columns={"index": "Category"})
+)
+
+print(f"Just for {TARGET_DATE} (out of {len(results_df)} cities with usable data):")
+yesterday_tally_table
+```
+
+```{python}
+#| label: show-table
+
+results_df.drop(columns=["Map color"]).style.format({"Actual high (°F)": "{:.1f}", "Record high (°F)": "{:.1f}"})
+```
+
+## 4. Back-calculated running tally since 2020
+
+A single day's snapshot is a small sample — most cities aren't near their
+record on any given day. To get a real sense of *how often* major US cities
+are running hot relative to their own history, this section replays the same
+comparison for **every day since `{python} TALLY_START_DATE`** for each of
+the `{python} len(results)` resolved cities (using the station histories
+already pulled above — no extra fetching needed), and keeps a cumulative
+tally across all of it.
+
+The one thing that has to change for a multi-year replay: "the record" can't
+be a fixed number looked up once, because it should only reflect what was
+*actually the record at the time* — a September day in 2021 should be judged
+against the record as it stood coming into 2021, not against a hotter day
+that happened to occur in 2023. So for each station and each calendar day,
+this uses an **expanding, backward-looking record**: the highest reading
+ever seen on that calendar day in any *earlier* year. If a year sets a new
+record, that becomes the bar every later year is compared against.
+
+```{python}
+#| label: historical-tally
+
+def expanding_daily_comparison(series):
+    """
+    For one station's full daily-tmax series, return a DataFrame (one row
+    per date) with each day's reading compared against the expanding,
+    backward-looking record for that calendar day -- i.e. the max reading
+    ever seen on that month/day in a *strictly earlier* year.
+
+    Rows where fewer than MIN_PRIOR_SAMPLES earlier years exist for that
+    calendar day are dropped, not just rows with zero prior years. A
+    station can pass the overall MIN_RECORD_YEARS bar and still have a
+    calendar day's "record" resting on only a handful of early
+    observations -- comparing against a record that immature makes it
+    trivially easy to "beat," which would inflate every tally below with
+    noise rather than genuine extremes.
+    """
+    df = series.rename("actual_f").to_frame()
+    df["month"] = df.index.month
+    df["day"] = df.index.day
+    grouped = df.groupby(["month", "day"])["actual_f"]
+    df["prior_record_f"] = grouped.transform(lambda s: s.expanding().max().shift(1))
+    df["prior_n"] = grouped.transform(lambda s: s.expanding().count().shift(1))
+    df = df[df["prior_n"] >= MIN_PRIOR_SAMPLES]
+    df["diff_f"] = (df["actual_f"] - df["prior_record_f"]).round(1)
+    return df[["actual_f", "prior_record_f", "diff_f"]]
+
+
+daily_frames = []
+for label, r in results.items():
+    comparison = run_stage(f"{label} (historical replay)",
+                            lambda r=r: expanding_daily_comparison(r["series"]))
+    if comparison is None:
+        continue
+    comparison = comparison.loc[TALLY_START_DATE:TARGET_DATE].copy()
+    comparison["City"] = label
+    daily_frames.append(comparison)
+
+daily_tally_df = pd.concat(daily_frames)
+daily_tally_df["Tally category"] = daily_tally_df["diff_f"].apply(tally_category)
+daily_tally_df["year"] = daily_tally_df.index.year
+
+overall_tally = (
+    daily_tally_df["Tally category"].value_counts().reindex(TALLY_CATEGORIES, fill_value=0)
+)
+overall_tally_table = (
+    overall_tally.rename("City-days").reset_index().rename(columns={"index": "Category"})
+)
+
+n_city_days = len(daily_tally_df)
+print(
+    f"Across {len(daily_frames)} cities and {n_city_days:,} city-days from "
+    f"{TALLY_START_DATE} to {TARGET_DATE}:"
+)
+overall_tally_table
+```
+
+```{python}
+#| label: yearly-tally-table
+
+yearly_tally = (
+    daily_tally_df[daily_tally_df["Tally category"].notna()]
+    .groupby(["year", "Tally category"]).size()
+    .unstack(fill_value=0)
+    .reindex(columns=TALLY_CATEGORIES, fill_value=0)
+)
+yearly_tally
+```
+
+```{python}
+#| label: yearly-tally-chart
+
+fig, ax = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
+bar_colors = {"Above record": "#67000d", "At record (tied)": "#de2d26", "Within 3°F of record": "#fc9272"}
+bottom = np.zeros(len(yearly_tally))
+for category in TALLY_CATEGORIES:
+    ax.bar(yearly_tally.index.astype(str), yearly_tally[category], bottom=bottom,
+           color=bar_colors[category], label=category)
+    bottom += yearly_tally[category].values
+
+ax.set_ylabel("City-days")
+ax.set_xlabel("Year")
+ax.set_title(f"Cities at/near their temperature record, by year ({TALLY_START_DATE.year}-{TARGET_DATE.year})")
+ax.legend(fontsize=8)
+ax.grid(axis="y", alpha=0.3)
+
+yearly_chart_path = IMAGE_DIR / "yearly-tally.png"
+fig.savefig(yearly_chart_path, format="png", dpi=140, bbox_inches="tight")
+plt.close(fig)
+```
+
+```{python}
+#| label: yearly-tally-chart-tag
+#| output: asis
+print(f'<img src="{yearly_chart_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+```
+
+::: {.callout-note}
+`{python} TARGET_DATE.year`'s bar is a partial year (through the render
+date only), not a full 12 months, so it isn't directly comparable to
+earlier complete years.
+:::
+
+## 5. Map yesterday's reading against its record
+
+```{python}
+#| label: render-map
+
+fig, ax = plt.subplots(figsize=(11, 6.5), subplot_kw={"projection": ccrs.LambertConformal(
+    central_longitude=-96, central_latitude=39)})
+ax.set_extent([-125, -66, 22, 50], crs=ccrs.PlateCarree())
+
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "physical", "land", "50m", edgecolor="none", facecolor="#f2f2f2"), zorder=0)
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "physical", "coastline", "50m", edgecolor="#4d4d4d", facecolor="none"), linewidth=0.8, zorder=1)
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#999999", facecolor="none"),
+    linewidth=0.5, zorder=1)
+
+for _, row in results_df.iterrows():
+    ax.scatter(row["lon"], row["lat"], s=90, color=row["Map color"],
+               edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
+
+legend_handles = [
+    plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
+               markeredgecolor="black", markersize=9, label=label)
+    for _, color, label in DIFF_BINS
+]
+ax.legend(handles=legend_handles, loc="lower left", fontsize=7.5, title="Yesterday's high vs. record",
+          title_fontsize=8, framealpha=0.9)
+
+ax.set_title(f"50 most populous US cities: previous-day high vs. all-time record for {TARGET_DATE}")
+
+slug = "city-temp-records"
+image_path = IMAGE_DIR / f"{slug}.png"
+fig.savefig(image_path, format="png", dpi=140, bbox_inches="tight")
+plt.close(fig)
+```
+
+```{python}
+#| label: render-map-tag
+#| output: asis
+print(f'<img src="{image_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+
+for label, tb in failures:
+    print(f"<!-- Skipped {label}:\n{tb}\n-->")
+```
+
+## Method notes & caveats
+
+- **"50 most influential cities" = 50 most populous cities.** Population
+  (~2023-2024 Census estimates) is used as a standard, reproducible proxy
+  for "influential" — there's no single agreed-upon ranking for the latter,
+  and population is the one that's citable and doesn't change based on
+  opinion.
+- **Data source**: [Meteostat](https://meteostat.net/), which aggregates
+  NOAA/NWS (and other) station daily summaries. Station histories vary in
+  length — some (e.g. long-running first-order airports) go back 80+ years;
+  others considerably less. The **"Years compared"** column in the results
+  table shows exactly how many other years' worth of data each city's
+  "record" is actually based on, so a thin record is visible rather than
+  hidden. This is each **station's own digitized daily record**, not
+  necessarily an official NWS all-time record for that city (which may rely
+  on a longer or differently-sourced period of record).
+- **Reporting lag**: some stations' daily summaries aren't finalized for
+  several days. This page targets "yesterday" (`{python} TARGET_DATE`) but
+  falls back to a station's own most recent reading (within
+  `{python} MAX_STALENESS_DAYS` days) when "yesterday" isn't available yet
+  — the **"Date used"** column shows exactly which date each city's row
+  reflects, since they aren't guaranteed to all be the same day.
+- **Station choice picks the most complete candidate, not the nearest one.**
+  Up to `{python} N_CANDIDATE_STATIONS` candidates within
+  `{python} STATION_SEARCH_RADIUS_M // 1000` km are fetched for each city,
+  and whichever has the most actual years of history is used — *not*
+  whichever is physically closest. This was a deliberate fix after an
+  initial version picked the nearest station unconditionally (as long as it
+  cleared `MIN_RECORD_YEARS`), which for at least one test city turned out
+  to be a nearby short/sparsely-reporting site instead of a much
+  longer-running official airport station a few km further out — that
+  produced "records" resting on a couple sparse decades rather than a
+  station's real history. Picking by completeness instead of distance is a
+  cheap, reliable proxy for station quality here.
+- **A calendar day's record also needs a minimum sample size of its own**
+  (`MIN_PRIOR_SAMPLES` = `{python} MIN_PRIOR_SAMPLES` earlier years), applied
+  in the back-calculated tally in the next section. A station can pass the
+  overall history-length bar while a specific month/day within it still has
+  very few prior observations early in the record, making that day's
+  "record" trivially easy to beat — this floor keeps those thin spots out of
+  the tally instead of counting them as genuine extremes.
+- **Tally vs. map categories are deliberately different granularities.**
+  The running tally uses three mutually-exclusive buckets (above record:
+  more than 1°F over; tied: within 1°F either way; within 3°F: 1-3°F under)
+  as requested. The map uses a finer 7-color ramp over the full range of
+  possible differences, so a city that's, say, 25°F under its record is
+  still visually distinguishable from one that's 5°F under — the tally
+  only tracks the "close calls."
+- **The back-calculated tally uses an *expanding*, backward-looking record,
+  not the same "all other years" record as the single-day snapshot above.**
+  For the single day this page targets (`yesterday`), those two definitions
+  happen to agree, since there's no later data to leak in. But replaying
+  years of history the naive way — comparing every day against the max over
+  *all* years, including ones after it — would let a hot day in 2024 count
+  as "the record" a 2020 reading is judged against, which reverses cause
+  and effect. Instead, each day is compared only to the highest reading
+  ever seen on that calendar day in a **strictly earlier year**, so a new
+  record set in one year correctly raises the bar for every year after it,
+  and never for years before it.
+- **Why 2020, and why 3°F**: `{python} TALLY_START_DATE.year` was chosen as
+  a round, recent starting point with enough span to show a year-over-year
+  pattern rather than just one data point; there's nothing special about
+  that year beyond that. The "within" threshold was tightened from an
+  initial 5°F to 3°F to keep that bucket meaning "genuinely close," not just
+  "somewhere in the neighborhood."
+- **`DEBUG_RAISE = False`**: a city that fails at any stage (no usable
+  station, insufficient history, stale data) is dropped, with the reason
+  logged as an HTML comment in the page source, rather than taking down the
+  whole page. Flip it to `True` temporarily to get a full traceback while
+  debugging a specific city.
+- **Large-request guard disabled on purpose**: Meteostat blocks any single
+  daily-data request spanning more than 30 years by default. That's turned
+  off here (`meteostat.config.block_large_requests = False`) deliberately,
+  since computing an honest "record for this calendar day" requires each
+  station's *entire* digitized history, not just the last 30 years.
+- **Station fetches run in parallel** (`ThreadPoolExecutor`, up to
+  `{python} N_WORKERS` at once) since each is an independent network call to
+  Meteostat's bulk data. Every candidate for every city is fetched (not just
+  the nearest one, per the station-choice note above), so this stage pulls
+  roughly `{python} N_CANDIDATE_STATIONS`x more station histories than there
+  are cities — still well worth parallelizing, but it's the long pole in
+  this page's render time (on the order of 15-20 minutes for all 50 cities),
+  not a "couple of minutes" affair.
+
+## Keeping this page current
+
+This post is intended to be rebuilt automatically every day via a scheduled
+CI job (see `README.md` for how this site's scheduled rebuilds are wired
+up), the same way the [tropical cyclone outlook
+post](../2026-09-09-ep-storm-precip-wind/index.qmd) stays current.
