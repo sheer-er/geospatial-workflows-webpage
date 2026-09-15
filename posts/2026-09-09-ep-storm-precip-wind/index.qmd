@@ -262,8 +262,26 @@ def process_storm(storm):
 
     # --- HAFS cycle ------------------------------------------------------
     from herbie import Herbie
+    from herbie.models.hafs import S as hafs_storms
 
     storm_id = atcf_storm_id(storm["id"])
+
+    # Herbie resolves the HAFS storm-following file path by scraping NOMADS's
+    # live "active storm" registry for this storm's name; a brand-new/just
+    # -designated storm (like an "XX-E" invest that hasn't been picked up
+    # yet) isn't in that registry until NOMADS/HAFS catch up, and Herbie's
+    # own error for that case is an opaque AttributeError deep in its HAFS
+    # template. Check for it up front so a missing storm fails once, fast,
+    # with a clear reason -- instead of the per-window loop below retrying
+    # (and failing) the same way for every single forecast window.
+    if hafs_storms.id_to_name.get(storm_id) is None:
+        raise RuntimeError(
+            f"HAFS has no storm-following guidance for {storm['id']} (ATCF id "
+            f"'{storm_id}') yet -- it isn't in NOMADS's active HAFS storm "
+            f"registry (hafs/prod/inphfsa listing) right now. This is normal "
+            f"for a storm that was just designated; it should appear once "
+            f"NHC/NOMADS register it."
+        )
 
     now = datetime.now(timezone.utc)
     cycle_hour = (now.hour // 6) * 6
@@ -499,9 +517,11 @@ def process_storm(storm):
 #| output: asis
 
 panels = []
-DEBUG_RAISE = True  # TEMPORARY: True lets real errors surface via Quarto's own
-                    # traceback reporting. Set False once things work, so one
-                    # bad storm can't take down the whole page in production.
+DEBUG_RAISE = False  # False: a storm that fails (e.g. no HAFS data yet for a
+                     # brand-new invest) is skipped -- reason logged as an
+                     # HTML comment -- rather than taking down the whole page.
+                     # Set True temporarily while debugging a specific failure
+                     # to get Quarto's own traceback reporting instead.
 
 if has_storms:
     for storm in selected_storms:
@@ -581,10 +601,11 @@ function showStormPanel(id) {
 - **"1-minute sustained" wind**: HAFS's wind field is a model wind, not
   NHC's official 1-minute convention. The `÷0.88` factor is a standard WMO
   approximation, not an official NHC intensity estimate.
-- **`DEBUG_RAISE = True`**: currently set so a real failure stops the
-  render with a full traceback (easiest for debugging). Set it to `False`
-  once this is working end-to-end, so one bad storm doesn't take down the
-  whole page in production.
+- **`DEBUG_RAISE = False`**: a storm that fails (e.g. no HAFS storm-following
+  guidance published yet for a brand-new invest) is skipped, with the reason
+  logged as an HTML comment in the page source, rather than taking down the
+  whole page. Flip it to `True` temporarily while chasing a specific failure
+  to get Quarto's own full-traceback error reporting instead.
 - **First real run**: check the per-window precip/wind range comments in
   the page source (or terminal) first if anything looks wrong — they'll
   show exactly which window (if any) is producing bad numbers, rather than
