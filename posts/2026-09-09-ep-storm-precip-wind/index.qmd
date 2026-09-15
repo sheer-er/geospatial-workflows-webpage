@@ -76,6 +76,7 @@ import pandas as pd
 import requests
 import xarray as xr
 from matplotlib.collections import LineCollection
+from matplotlib.colors import LogNorm
 from matplotlib.lines import Line2D
 from matplotlib.patches import Patch
 from pyproj import Geod
@@ -86,8 +87,13 @@ import cartopy.feature as cfeature
 # --- Configuration -----------------------------------------------------
 RADIUS_KM = 500.0
 BASINS = {"al": "NA", "ep": "EP", "cp": "CP"}  # NHC's own Atlantic prefix is "al"
-BBOX_PAD_DEG = 10.0
-EXTENT_PAD_DEG = 5.0
+# EXTENT_PAD_DEG is the final map's zoom level; BBOX_PAD_DEG is how far past
+# that the underlying HAFS regridding domain extends, so the fetched data
+# always covers a margin beyond what's actually shown (avoids a blank strip
+# right at the visible edge). Keep BBOX_PAD_DEG > EXTENT_PAD_DEG by the same
+# margin if you change either.
+BBOX_PAD_DEG = 15.0
+EXTENT_PAD_DEG = 10.0
 CURRENT_STORMS_URL = "https://www.nhc.noaa.gov/CurrentStorms.json"
 HAFS_MODEL = "hafsa"
 HAFS_PRODUCT = "storm.atm"
@@ -97,6 +103,14 @@ GEOD = Geod(ellps="WGS84")
 MM_TO_IN = 1.0 / 25.4
 MPS_TO_MPH = 2.236936
 ONE_MIN_SUSTAINED_FACTOR = 1.0 / 0.88  # WMO 10-min -> 1-min rule-of-thumb; not an official NHC value
+
+# Precip colorbar: log scale so the 1-10 in range (where most of the
+# interesting variation is) isn't washed out by rare, very high values.
+# Capped at 30 in -- anything above renders as the top color (colorbar shows
+# a ">" arrow via extend="max") rather than stretching the whole scale to
+# accommodate one extreme pixel.
+PRECIP_VMIN_IN = 1.0
+PRECIP_VMAX_IN = 30.0
 
 # Images are written as real PNG files (NOT embedded base64 -- Quarto's
 # preview server tried to treat a base64 data: URI as a filesystem path and
@@ -605,8 +619,13 @@ def render_storm_plot(entry):
     lon_plot = xr.where(precip_in["longitude"] > 180, precip_in["longitude"] - 360, precip_in["longitude"])
     precip_plot = precip_in.where(precip_in > 0)
     mesh = ax.pcolormesh(lon_plot, precip_in["latitude"], precip_plot,
-                          cmap="YlGnBu", shading="auto", transform=ccrs.PlateCarree())
-    fig.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, label="Accumulated precipitation (in)")
+                          cmap="YlGnBu", shading="auto", transform=ccrs.PlateCarree(),
+                          norm=LogNorm(vmin=PRECIP_VMIN_IN, vmax=PRECIP_VMAX_IN))
+    cbar = fig.colorbar(mesh, ax=ax, orientation="vertical", pad=0.02, extend="max",
+                         label="Accumulated precipitation (in)")
+    cbar_ticks = [t for t in [1, 2, 3, 5, 10, 20, 30] if PRECIP_VMIN_IN <= t <= PRECIP_VMAX_IN]
+    cbar.set_ticks(cbar_ticks)
+    cbar.set_ticklabels([str(t) for t in cbar_ticks])
 
     if np.isfinite(wind_mph.values).any():
         wind_smooth = smooth_for_contour(wind_mph)
