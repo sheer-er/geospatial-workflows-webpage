@@ -3,8 +3,8 @@ title: "How Close Did Your City Come to a Temperature Record Last Month? Trackin
 description: >
   Once a month, pulls each of the 50 most populous US cities' weather
   station, tallies how many days in the prior calendar month landed near,
-  at, or above that station's all-time high for the day, and maps the
-  result -- plus a running multi-year tally since 2020.
+  at, or beyond that station's all-time high (and separately, all-time low)
+  for the day, and maps both -- plus a running multi-year tally since 2020.
 date: 2026-09-14
 categories: [climate, temperature-records, meteostat, extreme-heat]
 jupyter: python3
@@ -28,14 +28,15 @@ bottom), it:
    candidate with the longest history and the best coverage of the target
    month, not just the closest one).
 3. Compares **every day of that station's history** against the all-time
-   record for that calendar day, using an **expanding, backward-looking
-   record** — a record broken in one year raises the bar for every later
-   year, and never the reverse (see the methodology note and worked example
-   below).
-4. Keeps a **running tally since 2020**, broken out by year.
+   record for that calendar day — separately for **daily highs** and
+   **daily lows** — using an **expanding, backward-looking record**: a
+   record broken in one year moves the bar for every later year, and never
+   the reverse (see the methodology note and worked example below).
+4. Keeps a **running tally since 2020** for both highs and lows, broken out
+   by year.
 5. Focuses on the **most recently fully-completed calendar month** and, for
    each city, counts how many days that month landed in each band relative
-   to its record — then maps the result.
+   to its record high and its record low — then maps both.
 
 ::: {.callout-important}
 **This is a live, self-refreshing page, not a one-time snapshot.** There's
@@ -139,61 +140,106 @@ TARGET_MONTH_END = RUN_DATE.replace(day=1) - timedelta(days=1)
 TARGET_MONTH_START = TARGET_MONTH_END.replace(day=1)
 FETCH_END = datetime.combine(TARGET_MONTH_END, datetime.min.time())
 
-# How far back the back-calculated running tally goes. Every render walks
-# every city's *entire* daily history day by day from this date through
-# TARGET_MONTH_END (using the expanding "prior record" defined below), so
-# this isn't a separate fetch -- it reuses the same full history pulled above.
-TALLY_START_DATE = datetime(2020, 1, 1).date()
+# pandas.Series.loc[] slicing with plain datetime.date bounds is deprecated
+# (it now warns and asks for an explicit Timestamp) -- these are the
+# Timestamp-cast equivalents used everywhere a date-range slice is needed
+# below, so that warning never gets a chance to fire.
+TALLY_START_TS = pd.Timestamp(TALLY_START_DATE := datetime(2020, 1, 1).date())
+TARGET_MONTH_START_TS = pd.Timestamp(TARGET_MONTH_START)
+TARGET_MONTH_END_TS = pd.Timestamp(TARGET_MONTH_END)
+
 MIN_PRIOR_SAMPLES = 15   # a calendar day's "record" needs at least this many earlier
                          # years behind it before a reading is compared against it at all
 
-# Mutually-exclusive tally buckets used by the multi-year running tally.
-TALLY_CATEGORIES = ["Above record", "At record (tied)", "Within 3°F of record"]
+TIED_BAND_F = 0.5   # a reading within +/- this many °F of the record counts as "tied" --
+                     # NOT the same thing as being within 1°F total spread; +/-0.5°F is a
+                     # 1°F-wide band centered on the record, which is what "within a degree"
+                     # was meant to mean here. An earlier version of this page used
+                     # diff_f >= -1 (i.e. +/-1°F, a 2°F-wide band) for "tied" -- overwritten
+                     # to +/-0.5°F once that ambiguity was pointed out.
+
+TALLY_CATEGORIES_MAX = ["Above record", "At record (tied)", "Within 3°F of record"]
+TALLY_CATEGORIES_MIN = ["Below record", "At record (tied)", "Within 3°F of record"]
 
 
-def tally_category(diff_f):
-    """A city-day counts toward exactly one of these three buckets."""
+def classify_diff(diff_f, extreme_label):
+    """
+    Shared classifier for both daily-high and daily-low comparisons.
+    diff_f > 0 always means "this day set a new record in the extreme
+    direction" -- expanding_daily_comparison() below flips the sign for
+    daily lows so this function never has to know which direction it's
+    looking at. extreme_label names that direction for the top bucket,
+    e.g. "Above" for highs or "Below" for lows.
+    """
     if diff_f > 1:
-        return "Above record"
-    if diff_f >= -1:
+        return f"{extreme_label} record"
+    if -TIED_BAND_F <= diff_f <= TIED_BAND_F:
         return "At record (tied)"
     if diff_f >= -3:
         return "Within 3°F of record"
     return None  # not close enough to tally
 
 
-# Per-city, per-month classification used for the map below. Reuses the same
-# reference distance bands (20/10/3/1 °F) mentioned in the "at or above
-# record" framing above, escalated by how many days in the month reached
-# each band -- checked from most extreme (dark red) to least (dark blue),
-# first match wins. See "Why this color ladder" in the caveats for how this
-# was cleaned up from an inconsistent first draft (two duplicate bins).
+# Per-city, per-month classification used for the maps below. A 9-step
+# diverging ladder -- checked from most extreme (index 0) to least
+# (index 8), first match wins. Both ends are fully-saturated anchor colors
+# (most extreme in one direction / most extreme in the other), shading
+# through progressively lighter tones toward a neutral gray in the middle.
+# For daily highs (MONTH_TIERS), red = notable heat, blue = far from the
+# hot record. For daily lows (MONTH_TIERS_MIN), this is intentionally
+# *inverted* -- blue = notable cold (a new or near-record low), red = far
+# from the cold record, i.e. a relatively mild month -- see "Why this color
+# ladder" in the caveats.
 MONTH_TIERS = [
     ("#67000d", "3+ days set a new record (>1°F over)"),
     ("#de2d26", "1-2 days set a new record (>1°F over)"),
-    ("#fc9272", "2+ days tied the record (within 1°F)"),
-    ("#969696", "3+ days within 3°F of record"),
-    ("#6baed6", "1-2 days within 3°F of record"),
+    ("#fc9272", "3+ days tied the record (±0.5°F)"),
+    ("#fcbba1", "1-2 days tied the record (±0.5°F)"),
+    ("#fee0d2", "3+ days within 3°F of record"),
+    ("#969696", "1-2 days within 3°F of record"),
+    ("#6baed6", "3+ days within 10°F of record"),
     ("#2171b5", "At least 1 day within 10°F of record"),
     ("#08306b", "Not close all month (< 3 days within 20°F)"),
 ]
 
+MONTH_TIERS_MIN = [
+    ("#08306b", "3+ days set a new record low (>1°F under)"),
+    ("#2171b5", "1-2 days set a new record low (>1°F under)"),
+    ("#6baed6", "3+ days tied the record low (±0.5°F)"),
+    ("#9ecae1", "1-2 days tied the record low (±0.5°F)"),
+    ("#c6dbef", "3+ days within 3°F of record low"),
+    ("#969696", "1-2 days within 3°F of record low"),
+    ("#fee0d2", "3+ days within 10°F of record low"),
+    ("#fc9272", "At least 1 day within 10°F of record low"),
+    ("#67000d", "Not close all month (< 3 days within 20°F of record low)"),
+]
 
-def classify_month(counts):
-    """counts: dict with days_above, days_within_1, days_within_3, days_within_10."""
+
+def classify_month(counts, tiers):
+    """
+    counts: dict with days_above, days_tied, days_within_3, days_within_10.
+    Checked narrowest/most-extreme condition first at each threshold, so
+    "3+ days" and "1-2 days" versions of the same band never both match --
+    e.g. days_tied=5 satisfies both ">=3" and ">=1", but since ">=3" is
+    checked first, it's the one that wins.
+    """
     if counts["days_above"] >= 3:
-        return MONTH_TIERS[0]
+        return tiers[0]
     if counts["days_above"] >= 1:
-        return MONTH_TIERS[1]
-    if counts["days_within_1"] >= 2:
-        return MONTH_TIERS[2]
+        return tiers[1]
+    if counts["days_tied"] >= 3:
+        return tiers[2]
+    if counts["days_tied"] >= 1:
+        return tiers[3]
     if counts["days_within_3"] >= 3:
-        return MONTH_TIERS[3]
+        return tiers[4]
     if counts["days_within_3"] >= 1:
-        return MONTH_TIERS[4]
+        return tiers[5]
+    if counts["days_within_10"] >= 3:
+        return tiers[6]
     if counts["days_within_10"] >= 1:
-        return MONTH_TIERS[5]
-    return MONTH_TIERS[6]
+        return tiers[7]
+    return tiers[8]
 
 
 IMAGE_DIR = Path("record_images")
@@ -244,20 +290,19 @@ station_lookup_summary = pd.DataFrame([
 station_lookup_summary.head(10)
 ```
 
-## 2. Pull each station's full daily-max-temperature history
+## 2. Pull each station's full daily high/low-temperature history
 
 Fetched in parallel — each station's history is an independent network call,
-and there's no reason to wait for one before starting the next.
+and there's no reason to wait for one before starting the next. Both the
+daily high and daily low come back in the same request per station, so
+adding the low-temperature analysis below didn't require any extra fetching.
 
 ```{python}
 #| label: fetch-histories
 
-def fetch_station_tmax(station_id):
-    ts = meteostat.daily(station_id, HIST_START, FETCH_END, parameters=[Parameter.TMAX])
-    df = ts.fetch(units=UnitSystem.IMPERIAL)
-    if df is None or df.empty:
-        return None
-    return df["tmax"].dropna()
+def fetch_station_daily(station_id):
+    ts = meteostat.daily(station_id, HIST_START, FETCH_END, parameters=[Parameter.TMAX, Parameter.TMIN])
+    return ts.fetch(units=UnitSystem.IMPERIAL)
 
 
 # Fetch every candidate for every city (not just the nearest one) so the
@@ -270,12 +315,12 @@ def fetch_station_tmax(station_id):
 # initially producing "records" built on a couple sparse decades instead of
 # a station's full, well-populated history.
 all_candidate_ids = sorted({sid for ids in city_candidates.values() for sid in ids})
-station_series = {}
+station_data = {}
 with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
-    futures = {pool.submit(fetch_station_tmax, sid): sid for sid in all_candidate_ids}
+    futures = {pool.submit(fetch_station_daily, sid): sid for sid in all_candidate_ids}
     for future in futures:
         sid = futures[future]
-        station_series[sid] = run_stage(f"station {sid} (fetch)", future.result)
+        station_data[sid] = run_stage(f"station {sid} (fetch)", future.result)
 
 
 MONTH_DATES = pd.date_range(TARGET_MONTH_START, TARGET_MONTH_END, freq="D")
@@ -284,24 +329,33 @@ MONTH_DATES = pd.date_range(TARGET_MONTH_START, TARGET_MONTH_END, freq="D")
 def resolve_city(label, candidates):
     """
     Among this city's already-fetched candidate stations, pick whichever
-    has the most actual years of history (not just whichever is nearest),
-    is recent enough, and covers enough of the target month. Returns None
-    (city dropped, reason logged) if none qualify.
+    has the most actual years of daily-high history (not just whichever is
+    nearest), is recent enough, and covers enough of the target month.
+    Station choice is driven entirely by the high-temperature series --
+    a station reporting both highs and lows normally has matching coverage
+    for both, so this avoids running two separate (and possibly
+    conflicting) candidate searches. Returns None (city dropped, reason
+    logged) if no candidate qualifies.
     """
     reasons = []
     scored = []
     for station_id in candidates:
-        series = station_series.get(station_id)
-        if series is None or series.empty:
+        df = station_data.get(station_id)
+        if df is None or df.empty or "tmax" not in df.columns:
             reasons.append(f"{station_id}: no data returned")
             continue
 
-        n_years = series.index.year.nunique()
+        tmax_series = df["tmax"].dropna()
+        if tmax_series.empty:
+            reasons.append(f"{station_id}: no daily-high data returned")
+            continue
+
+        n_years = tmax_series.index.year.nunique()
         if n_years < MIN_RECORD_YEARS:
             reasons.append(f"{station_id}: only {n_years} year(s) of history")
             continue
 
-        latest_available = series.index.max().date()
+        latest_available = tmax_series.index.max().date()
         if (TARGET_MONTH_END - latest_available).days > MAX_STALENESS_DAYS:
             reasons.append(
                 f"{station_id}: most recent reading ({latest_available}) is more "
@@ -309,7 +363,7 @@ def resolve_city(label, candidates):
             )
             continue
 
-        coverage = series.index.normalize().isin(MONTH_DATES).sum() / len(MONTH_DATES)
+        coverage = tmax_series.index.normalize().isin(MONTH_DATES).sum() / len(MONTH_DATES)
         if coverage < MIN_MONTH_COVERAGE:
             reasons.append(
                 f"{station_id}: only {coverage:.0%} of {TARGET_MONTH_START:%B %Y} covered "
@@ -317,14 +371,18 @@ def resolve_city(label, candidates):
             )
             continue
 
-        scored.append((n_years, station_id, series))
+        tmin_series = df["tmin"].dropna() if "tmin" in df.columns else pd.Series(dtype=float)
+        scored.append((n_years, station_id, tmax_series, tmin_series))
 
     if not scored:
         raise RuntimeError(f"No usable candidate station for {label}: " + "; ".join(reasons))
 
-    # Most years of history wins, not nearest distance.
-    n_years, station_id, series = max(scored, key=lambda t: t[0])
-    return {"station": station_id, "n_years": n_years, "series": series}
+    # Most years of high-temp history wins, not nearest distance.
+    n_years, station_id, tmax_series, tmin_series = max(scored, key=lambda t: t[0])
+    return {
+        "station": station_id, "n_years": n_years,
+        "tmax_series": tmax_series, "tmin_series": tmin_series,
+    }
 
 
 results = {}
@@ -345,7 +403,50 @@ if failures:
     print(f"{len(failures)} city/stage combination(s) failed -- see HTML source comments for details.")
 ```
 
-## 3. Back-calculated running tally since 2020
+```{python}
+#| label: expanding-comparison-fn
+#| output: false
+
+def expanding_daily_comparison(series, mode="max"):
+    """
+    For one station's full daily series (highs or lows), return a
+    DataFrame (one row per date) with each day's reading compared against
+    the expanding, backward-looking record for that calendar day -- i.e.
+    the most extreme reading ever seen on that month/day in a *strictly
+    earlier* year.
+
+    mode="max" is for daily highs (record = highest prior reading);
+    mode="min" is for daily lows (record = lowest prior reading, and the
+    sign of diff_f is flipped so that diff_f > 0 always means "this day
+    set a new record," regardless of mode -- callers never need to know
+    which mode produced a given diff_f.
+
+    Rows where fewer than MIN_PRIOR_SAMPLES earlier years exist for that
+    calendar day are dropped, not just rows with zero prior years. A
+    station can pass the overall MIN_RECORD_YEARS bar and still have a
+    calendar day's "record" resting on only a handful of early
+    observations -- comparing against a record that immature makes it
+    trivially easy to "beat," which would inflate every tally below with
+    noise rather than genuine extremes.
+    """
+    df = series.rename("actual_f").to_frame()
+    df["month"] = df.index.month
+    df["day"] = df.index.day
+    grouped = df.groupby(["month", "day"])["actual_f"]
+    df["prior_n"] = grouped.transform(lambda s: s.expanding().count().shift(1))
+    if mode == "max":
+        df["prior_record_f"] = grouped.transform(lambda s: s.expanding().max().shift(1))
+    else:
+        df["prior_record_f"] = grouped.transform(lambda s: s.expanding().min().shift(1))
+    df = df[df["prior_n"] >= MIN_PRIOR_SAMPLES]
+    if mode == "max":
+        df["diff_f"] = (df["actual_f"] - df["prior_record_f"]).round(1)
+    else:
+        df["diff_f"] = (df["prior_record_f"] - df["actual_f"]).round(1)
+    return df[["actual_f", "prior_record_f", "diff_f"]]
+```
+
+## 3. Back-calculated running tally since 2020 — daily highs
 
 A single month is a small sample — most cities aren't near their record in
 any given month. To get a real sense of *how often* major US cities are
@@ -355,7 +456,7 @@ end of the target month, for each of the `{python} len(results)` resolved
 cities (using the station histories already pulled above — no extra
 fetching needed), and keeps a cumulative tally across all of it. The
 per-day results computed here also feed directly into the monthly map in
-the next section.
+section 5.
 
 The one thing that has to change for a multi-year replay: "the record"
 can't be a fixed number looked up once, because it should only reflect what
@@ -371,50 +472,24 @@ after it.
 ```{python}
 #| label: historical-tally
 
-def expanding_daily_comparison(series):
-    """
-    For one station's full daily-tmax series, return a DataFrame (one row
-    per date) with each day's reading compared against the expanding,
-    backward-looking record for that calendar day -- i.e. the max reading
-    ever seen on that month/day in a *strictly earlier* year.
-
-    Rows where fewer than MIN_PRIOR_SAMPLES earlier years exist for that
-    calendar day are dropped, not just rows with zero prior years. A
-    station can pass the overall MIN_RECORD_YEARS bar and still have a
-    calendar day's "record" resting on only a handful of early
-    observations -- comparing against a record that immature makes it
-    trivially easy to "beat," which would inflate every tally below with
-    noise rather than genuine extremes.
-    """
-    df = series.rename("actual_f").to_frame()
-    df["month"] = df.index.month
-    df["day"] = df.index.day
-    grouped = df.groupby(["month", "day"])["actual_f"]
-    df["prior_record_f"] = grouped.transform(lambda s: s.expanding().max().shift(1))
-    df["prior_n"] = grouped.transform(lambda s: s.expanding().count().shift(1))
-    df = df[df["prior_n"] >= MIN_PRIOR_SAMPLES]
-    df["diff_f"] = (df["actual_f"] - df["prior_record_f"]).round(1)
-    return df[["actual_f", "prior_record_f", "diff_f"]]
-
-
 daily_frames = []
 for label, r in results.items():
-    comparison = run_stage(f"{label} (historical replay)",
-                            lambda r=r: expanding_daily_comparison(r["series"]))
+    comparison = run_stage(f"{label} (historical replay, high)",
+                            lambda r=r: expanding_daily_comparison(r["tmax_series"], mode="max"))
     if comparison is None:
         continue
-    comparison = comparison.loc[TALLY_START_DATE:TARGET_MONTH_END].copy()
+    comparison = comparison.loc[TALLY_START_TS:TARGET_MONTH_END_TS].copy()
     comparison["City"] = label
     daily_frames.append(comparison)
 
 daily_tally_df = pd.concat(daily_frames)
-daily_tally_df["Tally category"] = daily_tally_df["diff_f"].apply(tally_category)
+daily_tally_df["Tally category"] = daily_tally_df["diff_f"].apply(lambda d: classify_diff(d, "Above"))
 daily_tally_df["year"] = daily_tally_df.index.year
 daily_tally_df["month"] = daily_tally_df.index.month
 daily_tally_df["day"] = daily_tally_df.index.day
 
 overall_tally = (
-    daily_tally_df["Tally category"].value_counts().reindex(TALLY_CATEGORIES, fill_value=0)
+    daily_tally_df["Tally category"].value_counts().reindex(TALLY_CATEGORIES_MAX, fill_value=0)
 )
 overall_tally_table = (
     overall_tally.rename("City-days").reset_index().rename(columns={"index": "Category"})
@@ -435,6 +510,9 @@ direct check on real data: the (city, calendar day) pair whose "prior
 record" baseline changed the *most* times within the tally window above —
 concrete proof that when a record is broken, every later comparison for
 that same calendar day uses the new, higher number, not the original one.
+(The daily-low analysis in section 6 uses the exact same mechanism, just
+mirrored to track the lowest prior reading instead of the highest -- this
+same evidence applies there too.)
 
 ```{python}
 #| label: record-update-spotcheck
@@ -473,7 +551,7 @@ yearly_tally = (
     daily_tally_df[daily_tally_df["Tally category"].notna()]
     .groupby(["year", "Tally category"]).size()
     .unstack(fill_value=0)
-    .reindex(columns=TALLY_CATEGORIES, fill_value=0)
+    .reindex(columns=TALLY_CATEGORIES_MAX, fill_value=0)
 )
 yearly_tally
 ```
@@ -484,15 +562,21 @@ yearly_tally
 fig, ax = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
 bar_colors = {"Above record": "#67000d", "At record (tied)": "#de2d26", "Within 3°F of record": "#fc9272"}
 bottom = np.zeros(len(yearly_tally))
-for category in TALLY_CATEGORIES:
+# Stack lightest-first (bottom) to darkest-last (top), i.e. the reverse of
+# TALLY_CATEGORIES_MAX's "most severe first" order -- whichever category is
+# drawn last ends up on top of the stack.
+for category in reversed(TALLY_CATEGORIES_MAX):
     ax.bar(yearly_tally.index.astype(str), yearly_tally[category], bottom=bottom,
            color=bar_colors[category], label=category)
     bottom += yearly_tally[category].values
 
 ax.set_ylabel("City-days")
 ax.set_xlabel("Year")
-ax.set_title(f"Cities at/near their temperature record, by year ({TALLY_START_DATE.year}-{TARGET_MONTH_END.year})")
-ax.legend(fontsize=8)
+ax.set_title(f"Cities at/near their record high, by year ({TALLY_START_DATE.year}-{TARGET_MONTH_END.year})")
+# Legend still reads "Above, At, Within" (most-to-least severe) even though
+# the bars stack the opposite way -- reverse the auto-collected order back.
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles[::-1], labels[::-1], fontsize=8)
 ax.grid(axis="y", alpha=0.3)
 
 yearly_chart_path = IMAGE_DIR / "yearly-tally.png"
@@ -512,19 +596,18 @@ above, not a full 12 months, so it isn't directly comparable to earlier
 complete years until the year finishes.
 :::
 
-## 4. Last month's results: `{python} TARGET_MONTH_START.strftime('%B %Y')`
+## 4. Last month's results, daily highs: `{python} TARGET_MONTH_START.strftime('%B %Y')`
 
 For each city, this counts how many days in the target month fell within
-each distance band of that city's record, then assigns the single highest
-tier reached (dark red beats red beats light red, and so on) — see
+each distance band of that city's record high, then assigns the single
+highest tier reached (dark red beats red beats light red, and so on) — see
 `classify_month` in the setup cell above.
 
 ```{python}
 #| label: monthly-summary
 
 month_slice = daily_tally_df[
-    (daily_tally_df.index >= pd.Timestamp(TARGET_MONTH_START))
-    & (daily_tally_df.index <= pd.Timestamp(TARGET_MONTH_END))
+    (daily_tally_df.index >= TARGET_MONTH_START_TS) & (daily_tally_df.index <= TARGET_MONTH_END_TS)
 ]
 
 city_meta = {f"{name}, {state}": (state, lat, lon) for name, state, lat, lon in CITIES}
@@ -533,16 +616,16 @@ monthly_rows = []
 for label, group in month_slice.groupby("City"):
     counts = {
         "days_above": int((group["diff_f"] > 1).sum()),
-        "days_within_1": int((group["diff_f"] >= -1).sum()),
+        "days_tied": int(((group["diff_f"] >= -TIED_BAND_F) & (group["diff_f"] <= TIED_BAND_F)).sum()),
         "days_within_3": int((group["diff_f"] >= -3).sum()),
         "days_within_10": int((group["diff_f"] >= -10).sum()),
     }
-    color, tier_label = classify_month(counts)
+    color, tier_label = classify_month(counts, MONTH_TIERS)
     state, lat, lon = city_meta[label]
     monthly_rows.append({
         "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
         "Days with data": len(group), "Days above record": counts["days_above"],
-        "Days within 1°F": counts["days_within_1"], "Days within 3°F": counts["days_within_3"],
+        "Days tied (±0.5°F)": counts["days_tied"], "Days within 3°F": counts["days_within_3"],
         "Days within 10°F": counts["days_within_10"],
         "Tier": tier_label, "Tier color": color,
     })
@@ -551,10 +634,11 @@ monthly_df = pd.DataFrame(monthly_rows).sort_values("Days above record", ascendi
 monthly_df.drop(columns=["Tier color"])
 ```
 
-## 5. Map last month against each city's record
+## 5. Map last month's highs against each city's record
 
 ```{python}
 #| label: render-map
+#| warning: false
 
 fig, ax = plt.subplots(figsize=(11, 6.5), subplot_kw={"projection": ccrs.LambertConformal(
     central_longitude=-96, central_latitude=39)})
@@ -578,9 +662,9 @@ legend_handles = [
     for color, label in MONTH_TIERS
 ]
 ax.legend(handles=legend_handles, loc="lower left", fontsize=7.5,
-          title=f"{TARGET_MONTH_START:%B %Y} vs. record", title_fontsize=8, framealpha=0.9)
+          title=f"{TARGET_MONTH_START:%B %Y} vs. record high", title_fontsize=8, framealpha=0.9)
 
-ax.set_title(f"50 most populous US cities: {TARGET_MONTH_START:%B %Y} vs. all-time record")
+ax.set_title(f"50 most populous US cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high")
 
 slug = "city-temp-records"
 image_path = IMAGE_DIR / f"{slug}.png"
@@ -592,6 +676,178 @@ plt.close(fig)
 #| label: render-map-tag
 #| output: asis
 print(f'<img src="{image_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+```
+
+## 6. Back-calculated running tally since 2020 — daily lows
+
+The inverse of section 3: the same expanding, backward-looking-record
+mechanism, applied to each station's daily **low** instead of daily high.
+"The record" here is the *coldest* reading ever seen on that calendar day
+in a strictly earlier year, and a day "sets a new record" by coming in
+*colder* than that -- everything else about the methodology (minimum prior
+sample size, never letting a later year's cold snap count against an
+earlier year, `TIED_BAND_F` for "tied") is identical to the high-temperature
+version above.
+
+```{python}
+#| label: historical-tally-min
+
+daily_frames_min = []
+for label, r in results.items():
+    if r["tmin_series"].empty:
+        failures.append((f"{label} (historical replay, low)", "no daily-low data for this station"))
+        continue
+    comparison = run_stage(f"{label} (historical replay, low)",
+                            lambda r=r: expanding_daily_comparison(r["tmin_series"], mode="min"))
+    if comparison is None:
+        continue
+    comparison = comparison.loc[TALLY_START_TS:TARGET_MONTH_END_TS].copy()
+    comparison["City"] = label
+    daily_frames_min.append(comparison)
+
+daily_tally_df_min = pd.concat(daily_frames_min)
+daily_tally_df_min["Tally category"] = daily_tally_df_min["diff_f"].apply(lambda d: classify_diff(d, "Below"))
+daily_tally_df_min["year"] = daily_tally_df_min.index.year
+daily_tally_df_min["month"] = daily_tally_df_min.index.month
+daily_tally_df_min["day"] = daily_tally_df_min.index.day
+
+overall_tally_min = (
+    daily_tally_df_min["Tally category"].value_counts().reindex(TALLY_CATEGORIES_MIN, fill_value=0)
+)
+overall_tally_min_table = (
+    overall_tally_min.rename("City-days").reset_index().rename(columns={"index": "Category"})
+)
+
+n_city_days_min = len(daily_tally_df_min)
+print(
+    f"Across {len(daily_frames_min)} cities and {n_city_days_min:,} city-days from "
+    f"{TALLY_START_DATE} to {TARGET_MONTH_END}:"
+)
+overall_tally_min_table
+```
+
+```{python}
+#| label: yearly-tally-table-min
+
+yearly_tally_min = (
+    daily_tally_df_min[daily_tally_df_min["Tally category"].notna()]
+    .groupby(["year", "Tally category"]).size()
+    .unstack(fill_value=0)
+    .reindex(columns=TALLY_CATEGORIES_MIN, fill_value=0)
+)
+yearly_tally_min
+```
+
+```{python}
+#| label: yearly-tally-chart-min
+
+fig, ax = plt.subplots(figsize=(8, 4.5), constrained_layout=True)
+# A cool-toned palette here, distinct from the warm one used for the daily-
+# high chart above, so the two charts aren't visually interchangeable at a
+# glance.
+bar_colors_min = {"Below record": "#08306b", "At record (tied)": "#2171b5", "Within 3°F of record": "#9ecae1"}
+bottom = np.zeros(len(yearly_tally_min))
+for category in reversed(TALLY_CATEGORIES_MIN):
+    ax.bar(yearly_tally_min.index.astype(str), yearly_tally_min[category], bottom=bottom,
+           color=bar_colors_min[category], label=category)
+    bottom += yearly_tally_min[category].values
+
+ax.set_ylabel("City-days")
+ax.set_xlabel("Year")
+ax.set_title(f"Cities at/near their record low, by year ({TALLY_START_DATE.year}-{TARGET_MONTH_END.year})")
+handles, labels = ax.get_legend_handles_labels()
+ax.legend(handles[::-1], labels[::-1], fontsize=8)
+ax.grid(axis="y", alpha=0.3)
+
+yearly_chart_path_min = IMAGE_DIR / "yearly-tally-low.png"
+fig.savefig(yearly_chart_path_min, format="png", dpi=140, bbox_inches="tight")
+plt.close(fig)
+```
+
+```{python}
+#| label: yearly-tally-chart-min-tag
+#| output: asis
+print(f'<img src="{yearly_chart_path_min.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+```
+
+## 7. Last month's results, daily lows: `{python} TARGET_MONTH_START.strftime('%B %Y')`
+
+Same idea as section 4, mirrored: how many days in the target month fell
+within each distance band of that city's record *low*.
+
+```{python}
+#| label: monthly-summary-min
+
+month_slice_min = daily_tally_df_min[
+    (daily_tally_df_min.index >= TARGET_MONTH_START_TS) & (daily_tally_df_min.index <= TARGET_MONTH_END_TS)
+]
+
+monthly_rows_min = []
+for label, group in month_slice_min.groupby("City"):
+    counts = {
+        "days_above": int((group["diff_f"] > 1).sum()),
+        "days_tied": int(((group["diff_f"] >= -TIED_BAND_F) & (group["diff_f"] <= TIED_BAND_F)).sum()),
+        "days_within_3": int((group["diff_f"] >= -3).sum()),
+        "days_within_10": int((group["diff_f"] >= -10).sum()),
+    }
+    color, tier_label = classify_month(counts, MONTH_TIERS_MIN)
+    state, lat, lon = city_meta[label]
+    monthly_rows_min.append({
+        "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
+        "Days with data": len(group), "Days below record": counts["days_above"],
+        "Days tied (±0.5°F)": counts["days_tied"], "Days within 3°F": counts["days_within_3"],
+        "Days within 10°F": counts["days_within_10"],
+        "Tier": tier_label, "Tier color": color,
+    })
+
+monthly_df_min = (
+    pd.DataFrame(monthly_rows_min).sort_values("Days below record", ascending=False).reset_index(drop=True)
+)
+monthly_df_min.drop(columns=["Tier color"])
+```
+
+## 8. Map last month's lows against each city's record low
+
+```{python}
+#| label: render-map-min
+#| warning: false
+
+fig, ax = plt.subplots(figsize=(11, 6.5), subplot_kw={"projection": ccrs.LambertConformal(
+    central_longitude=-96, central_latitude=39)})
+ax.set_extent([-125, -66, 22, 50], crs=ccrs.PlateCarree())
+
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "physical", "land", "50m", edgecolor="none", facecolor="#f2f2f2"), zorder=0)
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "physical", "coastline", "50m", edgecolor="#4d4d4d", facecolor="none"), linewidth=0.8, zorder=1)
+ax.add_feature(cfeature.NaturalEarthFeature(
+    "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#999999", facecolor="none"),
+    linewidth=0.5, zorder=1)
+
+for _, row in monthly_df_min.iterrows():
+    ax.scatter(row["lon"], row["lat"], s=90, color=row["Tier color"],
+               edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
+
+legend_handles_min = [
+    plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
+               markeredgecolor="black", markersize=9, label=label)
+    for color, label in MONTH_TIERS_MIN
+]
+ax.legend(handles=legend_handles_min, loc="lower left", fontsize=7.5,
+          title=f"{TARGET_MONTH_START:%B %Y} vs. record low", title_fontsize=8, framealpha=0.9)
+
+ax.set_title(f"50 most populous US cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low")
+
+slug_min = "city-temp-records-low"
+image_path_min = IMAGE_DIR / f"{slug_min}.png"
+fig.savefig(image_path_min, format="png", dpi=140, bbox_inches="tight")
+plt.close(fig)
+```
+
+```{python}
+#| label: render-map-min-tag
+#| output: asis
+print(f'<img src="{image_path_min.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
 
 for label, tb in failures:
     print(f"<!-- Skipped {label}:\n{tb}\n-->")
@@ -621,17 +877,28 @@ for label, tb in failures:
   one-day-later answer. Rendering once a month for the *prior, fully
   completed* month gives station data real time to finalize (some
   long-running stations lag by a week or more — see the staleness note
-  below) and produces a more meaningful "how hot did this month actually
-  run" summary than a single day ever could.
+  below) and produces a more meaningful "how hot/cold did this month
+  actually run" summary than a single day ever could.
+- **Highs and lows share one mechanism, mirrored.** `expanding_daily_comparison()`
+  takes a `mode` argument ("max" for daily highs, "min" for daily lows) and
+  internally flips the sign of `diff_f` for the "min" case, so that
+  `diff_f > 0` always means "this day set a new record in the extreme
+  direction" regardless of which one is being computed. `classify_diff()`
+  and `classify_month()` are likewise shared by both — only the color/label
+  tables (`MONTH_TIERS` vs. `MONTH_TIERS_MIN`) and the category names
+  ("Above record" vs. "Below record") differ.
 - **Station choice picks the most complete candidate, not the nearest one.**
   Up to `{python} N_CANDIDATE_STATIONS` candidates within
   `{python} STATION_SEARCH_RADIUS_M // 1000` km are fetched for each city,
-  and whichever has the most actual years of history is used — *not*
-  whichever is physically closest. This was a deliberate fix after an
+  and whichever has the most actual years of daily-high history is used —
+  *not* whichever is physically closest. This was a deliberate fix after an
   initial version picked the nearest station unconditionally (as long as it
   cleared `MIN_RECORD_YEARS`), which for at least one test city turned out
   to be a nearby short/sparsely-reporting site instead of a much
-  longer-running official airport station a few km further out.
+  longer-running official airport station a few km further out. The same
+  station (and thus the same daily-low series) is used for both the
+  high-temperature and low-temperature analyses, rather than running two
+  independent searches that could disagree.
 - **A candidate station must also cover the target month.** Beyond overall
   history length, `MIN_MONTH_COVERAGE` (`{python} f"{MIN_MONTH_COVERAGE:.0%}"`)
   requires a candidate to have data for most of the target month specifically
@@ -649,38 +916,53 @@ for label, tb in failures:
   month/day within it still has very few prior observations early in the
   record, making that day's "record" trivially easy to beat — this floor
   keeps those thin spots out of every tally on this page.
-- **The multi-year tally and the monthly map use an *expanding*,
-  backward-looking record.** Comparing every day against the max over *all*
-  years, including ones after it, would let a hot day in 2024 count as "the
-  record" a 2020 reading is judged against, which reverses cause and
-  effect. Instead, each day is compared only to the highest reading ever
-  seen on that calendar day in a **strictly earlier year**, so a new record
-  set in one year correctly raises the bar for every year after it, and
-  never for years before it — see the worked spot-check in section 3, which
-  finds a real (city, day) example and shows the record baseline actually
-  changing over time rather than just asserting it does.
+- **The multi-year tallies and monthly maps use an *expanding*,
+  backward-looking record.** Comparing every day against the extreme over
+  *all* years, including ones after it, would let e.g. a hot day in 2024
+  count as "the record" a 2020 reading is judged against, which reverses
+  cause and effect. Instead, each day is compared only to the most extreme
+  reading ever seen on that calendar day in a **strictly earlier year**, so
+  a new record set in one year correctly moves the bar for every year
+  after it, and never for years before it — see the worked spot-check in
+  section 3, which finds a real (city, day) example and shows the record
+  baseline actually changing over time rather than just asserting it does.
+- **"Tied" means ±0.5°F, not ±1°F.** An earlier version of this page used a
+  ±1°F band (`diff_f >= -1`) for the "tied" tally category, which is a
+  2°F-wide window, not the 1°F-wide "within a degree" that was actually
+  intended. `TIED_BAND_F = 0.5` fixes this: "at record (tied)" now means
+  `-0.5 <= diff_f <= 0.5`, a 1°F-wide band centered on the record.
 - **Why this color ladder (and why it's not literally the first draft)**:
-  the first version of the monthly color scale had two buckets defined
-  identically ("< 3 days within 3°F" listed twice, for both light blue and
-  gray). Cleaned up here into a strict escalating ladder — checked from
-  most extreme (dark red) to least (dark blue), highest tier reached wins —
-  by changing the gray tier to require *at least* 3 days within 3°F
-  (sustained closeness) rather than repeating light blue's "fewer than 3"
-  condition. The four reference bands (20°F / 10°F / 3°F / 1°F) and the
-  "1-2 days above" / "3+ days above" split above that are all taken
-  directly from the original request.
-- **Why 2020, and why 3°F for the multi-year tally**:
-  `{python} TALLY_START_DATE.year` was chosen as a round, recent starting
-  point with enough span to show a year-over-year pattern rather than just
-  one data point; there's nothing special about that year beyond that. The
-  "within" threshold there was tightened from an initial 5°F to 3°F to keep
-  that bucket meaning "genuinely close," not just "somewhere in the
-  neighborhood."
+  it went through a few rounds. The very first version had two buckets
+  defined identically ("< 3 days within 3°F" listed twice). The settled
+  version is a 9-step **diverging** ladder: two fully-saturated anchor
+  colors at the extremes, shading through progressively lighter tones
+  toward a neutral gray in the middle, with each of the "tied" / "within
+  3°F" / "within 10°F" bands split into its own "3+ days" and "1-2 days"
+  tier (checked 3+ first, so a city with 3+ days never gets miscounted into
+  the "1-2" tier just because 1-2 is also technically true). One asymmetry
+  worth calling out: the bottom tier's label ("At least 1 day within 10°F")
+  is a holdover from before the "3+ days within 10°F" tier existed just
+  above it — in practice that tier only ever fires for 1-2 days now, since
+  3+ is claimed first, but the exact wording wasn't revisited.
+- **Daily lows use the same ladder shape with the colors deliberately
+  inverted.** For daily highs, red means "notably hot" (close to or beyond
+  the record) and blue means "far from the hot record, i.e. a relatively
+  cool month." For daily lows, blue instead means "notably cold" (close to
+  or beyond the record *low*) and red means "far from the cold record,
+  i.e. a relatively mild month" — matching the intuitive association of
+  blue with cold and red with warm, at the cost of the two maps not sharing
+  one universal color meaning (check each map's own legend).
+- **Why 2020 for the multi-year tally**: `{python} TALLY_START_DATE.year`
+  was chosen as a round, recent starting point with enough span to show a
+  year-over-year pattern rather than just one data point; there's nothing
+  special about that year beyond that.
 - **`DEBUG_RAISE = False`**: a city that fails at any stage (no usable
-  station, insufficient history, stale data, insufficient month coverage)
-  is dropped, with the reason logged as an HTML comment in the page source,
-  rather than taking down the whole page. Flip it to `True` temporarily to
-  get a full traceback while debugging a specific city.
+  station, insufficient history, stale data, insufficient month coverage,
+  or — for the low-temperature analysis specifically — a station that
+  reports highs but not lows) is dropped, with the reason logged as an
+  HTML comment in the page source, rather than taking down the whole page.
+  Flip it to `True` temporarily to get a full traceback while debugging a
+  specific city.
 - **Large-request guard disabled on purpose**: Meteostat blocks any single
   daily-data request spanning more than 30 years by default. That's turned
   off here (`meteostat.config.block_large_requests = False`) deliberately,
