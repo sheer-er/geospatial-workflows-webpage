@@ -515,7 +515,7 @@ Important
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>])</span>
 <span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>station_lookup_summary.head(<span class="dv">10</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="find-stations" class="cell-output cell-output-display" data-execution_count="21">
+<div id="find-stations" class="cell-output cell-output-display" data-execution_count="2">
 <div>
 
 
@@ -780,7 +780,7 @@ Important
 <div class="cell-output cell-output-stdout">
 <pre><code>Across 50 cities and 121,272 city-days from 2020-01-01 to 2026-08-31:</code></pre>
 </div>
-<div id="historical-tally" class="cell-output cell-output-display" data-execution_count="24">
+<div id="historical-tally" class="cell-output cell-output-display" data-execution_count="5">
 <div>
 
 
@@ -922,7 +922,7 @@ Important
 <span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>yearly_tally</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="yearly-tally-table" class="cell-output cell-output-display" data-execution_count="26">
+<div id="yearly-tally-table" class="cell-output cell-output-display" data-execution_count="7">
 <div>
 
 
@@ -1023,7 +1023,7 @@ Important
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>yearly_chart_path<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/yearly-tally.png?v=1789533737" style="max-width:100%;"></p>
+<p><img src="record_images/yearly-tally.png?v=1789535308" style="max-width:100%;"></p>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -1073,7 +1073,7 @@ Note
 <span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>monthly_df <span class="op">=</span> pd.DataFrame(monthly_rows).sort_values(<span class="st">"Days above record"</span>, ascending<span class="op">=</span><span class="va">False</span>).reset_index(drop<span class="op">=</span><span class="va">True</span>)</span>
 <span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>monthly_df.drop(columns<span class="op">=</span>[<span class="st">"Tier color"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="monthly-summary" class="cell-output cell-output-display" data-execution_count="29">
+<div id="monthly-summary" class="cell-output cell-output-display" data-execution_count="10">
 <div>
 
 
@@ -1793,7 +1793,7 @@ Note
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>image_path<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/city-temp-records.png?v=1789533737" style="max-width:100%;"></p>
+<p><img src="record_images/city-temp-records.png?v=1789535308" style="max-width:100%;"></p>
 </div>
 </section>
 <section id="back-calculated-running-tally-since-2020-daily-lows" class="level2">
@@ -1838,7 +1838,7 @@ Note
 <div class="cell-output cell-output-stdout">
 <pre><code>Across 50 cities and 121,272 city-days from 2020-01-01 to 2026-08-31:</code></pre>
 </div>
-<div id="historical-tally-min" class="cell-output cell-output-display" data-execution_count="32">
+<div id="historical-tally-min" class="cell-output cell-output-display" data-execution_count="13">
 <div>
 
 
@@ -1883,7 +1883,7 @@ Note
 <span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>yearly_tally_min</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="yearly-tally-table-min" class="cell-output cell-output-display" data-execution_count="33">
+<div id="yearly-tally-table-min" class="cell-output cell-output-display" data-execution_count="14">
 <div>
 
 
@@ -1982,7 +1982,7 @@ Note
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>yearly_chart_path_min<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/yearly-tally-low.png?v=1789533737" style="max-width:100%;"></p>
+<p><img src="record_images/yearly-tally-low.png?v=1789535308" style="max-width:100%;"></p>
 </div>
 </section>
 <section id="last-months-results-daily-lows-august-2026" class="level2">
@@ -2018,7 +2018,7 @@ Note
 <span id="cb21-25"><a href="#cb21-25" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb21-26"><a href="#cb21-26" aria-hidden="true" tabindex="-1"></a>monthly_df_min.drop(columns<span class="op">=</span>[<span class="st">"Tier color"</span>])</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div id="monthly-summary-min" class="cell-output cell-output-display" data-execution_count="36">
+<div id="monthly-summary-min" class="cell-output cell-output-display" data-execution_count="17">
 <div>
 
 
@@ -2741,7 +2741,7 @@ Note
 <span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, tb <span class="kw">in</span> failures:</span>
 <span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"&lt;!-- Skipped </span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="sc">{</span>tb<span class="sc">}</span><span class="ch">\n</span><span class="ss">--&gt;"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/city-temp-records-low.png?v=1789533737" style="max-width:100%;"></p>
+<p><img src="record_images/city-temp-records-low.png?v=1789535308" style="max-width:100%;"></p>
 </div>
 </section>
 <section id="method-notes-caveats" class="level2">
