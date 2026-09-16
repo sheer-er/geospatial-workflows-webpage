@@ -1,7 +1,7 @@
 ---
-title: "How Close Did Your City Come to a Temperature Record Last Month? Tracking 100 Cities Across North America"
+title: "How Close Did Your City Come to a Temperature Record Last Month? Tracking ~100 Cities Across North America"
 description: >
-  Once a month, pulls each of 100 major US, Canadian, and Mexican cities'
+  Once a month, pulls each of ~100 major US, Canadian, and Mexican cities'
   weather station, tallies how many days in the prior calendar month
   landed near, at, or beyond that station's all-time high (and separately,
   all-time low) for the day, and maps both -- plus a running multi-year
@@ -22,7 +22,7 @@ resources:
 Every time this page is rendered (once a month — see the note at the
 bottom), it:
 
-1. Takes a fixed list of **100 cities** across the US, Canada, and Mexico
+1. Takes a fixed list of **~100 cities** across the US, Canada, and Mexico
    (mostly by population, as a standard proxy for "most influential" — see
    the caveats section for the details and judgment calls involved).
 2. For each city, finds the **most complete nearby weather station** (the
@@ -92,9 +92,9 @@ logging.getLogger("meteostat").setLevel(logging.ERROR)
 meteostat.config.block_large_requests = False
 
 # --- Configuration -----------------------------------------------------
-# 100 cities: the 75 most populous/relevant US cities, plus the 15 most
-# populous Canadian cities and 10 most populous Mexican cities (both by
-# city-proper population, not metro, deliberately excluding satellite
+# ~100 cities: the most populous/relevant US cities, plus the most
+# populous Canadian and Mexican cities (both by city-proper population,
+# not metro), deliberately excluding satellite
 # cities that are really just suburbs of a bigger neighbor -- e.g.
 # Mississauga/Brampton/Surrey (Toronto/Vancouver suburbs) and Ecatepec/
 # Zapopan/Guadalupe (Mexico City/Guadalajara/Monterrey suburbs) -- even
@@ -153,18 +153,23 @@ CITIES = [
     ("Des Moines", "IA", 41.5868, -93.6250, "DSM"), ("Spokane", "WA", 47.6588, -117.4260, "SPK"),
     ("Portland", "ME", 43.6591, -70.2568, "PME"), ("Burlington", "VT", 44.4759, -73.2121, "BTV"),
     ("Manchester", "NH", 42.9956, -71.4548, "MAN"), ("Honolulu", "HI", 21.3069, -157.8583, "HNL"),
-    ("Anchorage", "AK", 61.2181, -149.9003, "ANC"),
-    # --- Canada: 15 most populous cities (city-proper, non-suburb) ---
+    ("Anchorage", "AK", 61.2181, -149.9003, "ANC"), ("Fairbanks", "AK", 64.8378, -147.7164, "FAI"),
+    ("San Juan", "PR", 18.4655, -66.1057, "SJU"),
+    # --- Canada: 15 most populous cities (city-proper, non-suburb), with the
+    # Toronto-area cluster thinned out (Hamilton/London/Kitchener/Windsor all
+    # removed as overlapping/crowding Toronto's own point) and replaced with
+    # cities from provinces that otherwise had zero representation ---
     ("Toronto", "ON", 43.6532, -79.3832, "TOR"), ("Montreal", "QC", 45.5017, -73.5673, "MTL"),
     ("Calgary", "AB", 51.0447, -114.0719, "CGY"), ("Ottawa", "ON", 45.4215, -75.6972, "OTT"),
     ("Edmonton", "AB", 53.5461, -113.4938, "EDM"), ("Winnipeg", "MB", 49.8951, -97.1384, "WPG"),
-    ("Vancouver", "BC", 49.2827, -123.1207, "VAN"), ("Hamilton", "ON", 43.2557, -79.8711, "HAM"),
+    ("Vancouver", "BC", 49.2827, -123.1207, "VAN"), ("Victoria", "BC", 48.4284, -123.3656, "VIC"),
     ("Quebec City", "QC", 46.8139, -71.2080, "QUE"), ("Halifax", "NS", 44.6488, -63.5752, "HFX"),
-    ("London", "ON", 42.9849, -81.2453, "LDN"), ("Gatineau", "QC", 45.4765, -75.7013, "GAT"),
-    ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"), ("Kitchener", "ON", 43.4516, -80.4925, "KIT"),
-    ("Windsor", "ON", 42.3149, -83.0364, "WND"),
-    # --- Mexico: 10 most populous cities (municipality-proper, non-suburb) ---
-    ("Mexico City", "MX", 19.4326, -99.1332, "MEX"), ("Tijuana", "MX", 32.5149, -117.0382, "TIJ"),
+    ("Gatineau", "QC", 45.4765, -75.7013, "GAT"), ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"),
+    ("Moncton", "NB", 46.0878, -64.7782, "MCT"), ("St. John's", "NL", 47.5615, -52.7126, "STJ"),
+    ("Charlottetown", "PE", 46.2382, -63.1311, "CHT"),
+    # --- Mexico: most populous cities (municipality-proper, non-suburb);
+    # Tijuana removed ---
+    ("Mexico City", "MX", 19.4326, -99.1332, "MEX"),
     ("Leon", "MX", 21.1250, -101.6860, "LEN"), ("Ciudad Juarez", "MX", 31.6904, -106.4245, "CJS"),
     ("Puebla", "MX", 19.0414, -98.2063, "PUE"), ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
     ("Monterrey", "MX", 25.6866, -100.3161, "MTY"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
@@ -265,7 +270,7 @@ MONTH_TIERS = [
     ("#9ecae1", "1-2 days within 3°F of record"),
     ("#6baed6", "3+ days within 10°F of record"),
     ("#2171b5", "At least 1 day within 10°F of record"),
-    ("#08306b", "Not close all month (<3 days within 20°F)"),
+    ("#08306b", "No days within 10°F of record"),
 ]
 
 MONTH_TIERS_MIN = [
@@ -277,7 +282,7 @@ MONTH_TIERS_MIN = [
     ("#fcbba1", "1-2 days within 3°F of record low"),
     ("#fee0d2", "3+ days within 10°F of record low"),
     ("#fc9272", "At least 1 day within 10°F of record low"),
-    ("#67000d", "Not close all month (<3 days within 20°F of record low)"),
+    ("#67000d", "No days within 10°F of record low"),
 ]
 
 
@@ -331,16 +336,30 @@ def run_stage(label, fn):
         return None
 
 
-# Anchorage and Honolulu sit far outside a North-America-scale map extent
-# otherwise (Anchorage is well north of even the Canadian cities here;
-# Honolulu is in the middle of the Pacific) -- rather than silently
-# dropping them, both maps below give them their own small inset panel,
-# the same treatment most national US maps use for Alaska and Hawaii.
-OUTLYING_CITIES = {"Anchorage, AK", "Honolulu, HI"}
+# Alaska (Anchorage, Fairbanks) and Hawaii (Honolulu) sit far outside a
+# North-America-scale map extent otherwise -- rather than silently
+# dropping them, both maps below give each its own small inset panel, the
+# same treatment most national US maps use. Insets are defined by their
+# own geographic extent (not a fixed city list), so a city belongs to an
+# inset simply by falling inside that extent's lon/lat box -- e.g. both
+# Alaska cities share one inset automatically. Placed flush with the
+# bottom-left corner and directly against each other (Alaska first, so it
+# touches the left edge; Hawaii's box starts exactly where Alaska's ends).
+# Alaska's extent is deliberately wide (not just zoomed to Anchorage) so
+# the state's outline is actually recognizable rather than an unlabeled
+# blob of coastline.
+_AK_RECT = [0.0, 0.0, 0.21, 0.30]
 INSET_SPECS = [
-    ("Anchorage, AK", [0.03, 0.24, 0.17, 0.17], [-155, -145, 58, 63]),
-    ("Honolulu, HI", [0.03, 0.05, 0.17, 0.17], [-161, -153, 18, 23]),
+    ("Alaska", _AK_RECT, [-172, -128, 54, 72]),
+    ("Hawaii", [_AK_RECT[0] + _AK_RECT[2], 0.0, 0.13, 0.30], [-161, -153, 18, 23]),
 ]
+
+
+def in_any_inset(df):
+    mask = pd.Series(False, index=df.index)
+    for _, _, (lon0, lon1, lat0, lat1) in INSET_SPECS:
+        mask |= (df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)
+    return mask
 
 
 def add_basemap(axis):
@@ -371,36 +390,29 @@ def plot_cities(axis, sub_df):
         )
 
 
-def render_temp_map(df, tiers, legend_title, plot_title, output_path):
+def render_temp_map(df, plot_title, output_path):
     """
     Shared by both the daily-high and daily-low maps below: draws the main
-    US/Canada/Mexico extent plus the two outlier insets, coloring each
+    US/Canada/Mexico extent plus the Alaska/Hawaii insets, coloring each
     city's point by its assigned tier and labeling it with its short code.
+    No legend is drawn on the figure itself -- with 100+ cities to fit, a
+    legend competing for space inside the image made everything (map and
+    legend both) too small to read on the page. `render_month_legend()`
+    below renders the same information as ordinary HTML instead, placed
+    next to the image, which also means its text stays crisp at any zoom
+    level rather than being baked into the raster image.
     """
-    # Figure is wider than the map itself needs, on purpose -- the daily-low
-    # legend's longer labels ("...of record low") were getting clipped at
-    # the figure edge when the legend area was sized for the shorter
-    # daily-high labels; keeping the map's own width the same in absolute
-    # inches while widening the figure leaves the legend enough room for
-    # either.
-    fig = plt.figure(figsize=(14.5, 7.5))
-    proj = ccrs.LambertConformal(central_longitude=-98, central_latitude=39)
-    ax = fig.add_axes([0.01, 0.03, 0.66, 0.93], projection=proj)
-    ax.set_extent([-128, -58, 14, 58], crs=ccrs.PlateCarree())
+    fig = plt.figure(figsize=(13, 7.8))
+    proj = ccrs.LambertConformal(central_longitude=-90, central_latitude=38)
+    ax = fig.add_axes([0.005, 0.02, 0.99, 0.94], projection=proj)
+    ax.set_extent([-126, -50, 14, 58], crs=ccrs.PlateCarree())
     add_basemap(ax)
-    plot_cities(ax, df[~df["City"].isin(OUTLYING_CITIES)])
-    ax.set_title(plot_title, fontsize=12)
+    plot_cities(ax, df[~in_any_inset(df)])
+    ax.set_title(plot_title, fontsize=13)
 
-    legend_handles = [
-        plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
-                   markeredgecolor="black", markersize=8, label=label)
-        for color, label in tiers
-    ]
-    fig.legend(handles=legend_handles, loc="center left", bbox_to_anchor=(0.685, 0.5),
-               fontsize=7.5, title=legend_title, title_fontsize=8, framealpha=0.9)
-
-    for city_label, rect, extent in INSET_SPECS:
-        sub = df[df["City"] == city_label]
+    for label, rect, extent in INSET_SPECS:
+        lon0, lon1, lat0, lat1 = extent
+        sub = df[(df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)]
         if sub.empty:
             continue
         inset_ax = fig.add_axes(rect, projection=ccrs.PlateCarree())
@@ -413,6 +425,26 @@ def render_temp_map(df, tiers, legend_title, plot_title, output_path):
 
     fig.savefig(output_path, format="png", dpi=150)
     plt.close(fig)
+
+
+def render_month_legend(tiers):
+    """
+    HTML color-key for a MONTH_TIERS-style list, printed next to (not
+    inside) the map image -- see render_temp_map()'s docstring for why.
+    No heading: the map's own title above it already says what the colors
+    are for.
+    """
+    swatches = "".join(
+        f'<span style="white-space:nowrap;margin-right:1.1em;">'
+        f'<span style="display:inline-block;width:0.85em;height:0.85em;border-radius:50%;'
+        f'background:{color};border:1px solid #333;margin-right:0.35em;vertical-align:middle;"></span>'
+        f'<span style="vertical-align:middle;">{label}</span></span>'
+        for color, label in tiers
+    )
+    print(
+        f'<div style="display:flex;flex-wrap:wrap;row-gap:0.4em;font-size:0.85em;'
+        f'margin:0.3em 0 1.2em;">{swatches}</div>'
+    )
 ```
 
 ## 1. Find each city's nearest usable weather station
@@ -793,9 +825,8 @@ monthly_df.drop(columns=["Tier color"])
 slug = "city-temp-records"
 image_path = IMAGE_DIR / f"{slug}.png"
 render_temp_map(
-    monthly_df, MONTH_TIERS,
-    legend_title=f"{TARGET_MONTH_START:%B %Y} vs. record high",
-    plot_title=f"100 North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high",
+    monthly_df,
+    plot_title=f"{len(CITIES)} North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high",
     output_path=image_path,
 )
 ```
@@ -804,6 +835,7 @@ render_temp_map(
 #| label: render-map-tag
 #| output: asis
 print(f'<img src="{image_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+render_month_legend(MONTH_TIERS)
 ```
 
 ## 6. Back-calculated running tally since 2020 — daily lows
@@ -943,9 +975,8 @@ monthly_df_min.drop(columns=["Tier color"])
 slug_min = "city-temp-records-low"
 image_path_min = IMAGE_DIR / f"{slug_min}.png"
 render_temp_map(
-    monthly_df_min, MONTH_TIERS_MIN,
-    legend_title=f"{TARGET_MONTH_START:%B %Y} vs. record low",
-    plot_title=f"100 North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low",
+    monthly_df_min,
+    plot_title=f"{len(CITIES)} North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low",
     output_path=image_path_min,
 )
 ```
@@ -954,6 +985,7 @@ render_temp_map(
 #| label: render-map-min-tag
 #| output: asis
 print(f'<img src="{image_path_min.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
+render_month_legend(MONTH_TIERS_MIN)
 
 for label, tb in failures:
     print(f"<!-- Skipped {label}:\n{tb}\n-->")
@@ -970,24 +1002,34 @@ for label, tb in failures:
   in one metro area (trimmed to just Dallas); Oakland, Long Beach, Fresno,
   Mesa, and Baltimore were swapped for Billings MT, Boise ID, Sioux Falls
   SD, New Orleans LA, Salt Lake City UT, Birmingham AL, and St. Louis MO
-  for broader geographic spread; and a further 25 US cities (mostly state
+  for broader geographic spread; a further 25 US cities (mostly state
   capitals and regionally notable cities named directly) were added,
-  bringing the US total to 75.
-- **Canada (15) and Mexico (10) additions, "ignoring suburbs."** Both lists
-  rank by city-*proper* population (not metro), which is what makes
-  "ignoring suburbs" a real judgment call rather than a simple cutoff: a
-  strict population ranking would include several satellite
-  municipalities that are really just part of a bigger neighbor's urban
-  area — Mississauga, Brampton, and Surrey (Toronto/Vancouver suburbs in
-  Canada); Ecatepec, Zapopan, and Guadalupe (Mexico City/Guadalajara/
-  Monterrey suburbs in Mexico) — all of which were excluded even though
-  several individually outrank cities that made the cut. Hamilton, ON and
-  Gatineau, QC were kept despite being near Toronto and Ottawa
-  respectively, since both have distinct identities, economies, and (for
-  Gatineau) even a different provincial government from their larger
-  neighbor, rather than functioning as bedroom suburbs. Ranking data for
+  bringing the US total to 75; and Fairbanks AK and San Juan PR were added
+  after that.
+- **Canada and Mexico additions, "ignoring suburbs."** Both lists rank by
+  city-*proper* population (not metro), which is what makes "ignoring
+  suburbs" a real judgment call rather than a simple cutoff: a strict
+  population ranking would include several satellite municipalities that
+  are really just part of a bigger neighbor's urban area — Mississauga,
+  Brampton, and Surrey (Toronto/Vancouver suburbs in Canada); Ecatepec,
+  Zapopan, and Guadalupe (Mexico City/Guadalajara/Monterrey suburbs in
+  Mexico); and, on reflection, Tijuana's inclusion was reconsidered and it
+  was dropped too — all excluded even though several individually outrank
+  cities that made the cut. The Canadian list also went through a second
+  pass: Hamilton, London, Kitchener, and Windsor were all removed, since
+  clustered together with Toronto and Ottawa they made that corner of the
+  map hard to read even though none of the four is really a suburb in the
+  Mississauga/Brampton sense. In their place: Victoria BC and four cities
+  chosen specifically to cover provinces that had zero representation
+  otherwise — Moncton NB, St. John's NL, and Charlottetown PE (the latter
+  notably smaller than everything else on the list, included anyway since
+  it's the only city of any size in Prince Edward Island and provincial
+  coverage was the explicit goal of this pass, not population). Gatineau,
+  QC was kept despite sitting right across the river from Ottawa, since it
+  has its own distinct government (a different province entirely) and
+  economy rather than functioning as a bedroom suburb. Ranking data for
   Mexican cities specifically is less precise here than for the US/Canada
-  lists, so the exact cutoff around 8th-10th place is approximate.
+  lists, so the exact cutoff toward the bottom of that list is approximate.
 - **City codes.** Every city gets a short, unique 2-3 character code, used
   to label its point on the maps in sections 5 and 8. Most are 3
   characters, often that city's real IATA airport code (`ATL`, `PHX`,
@@ -996,7 +1038,7 @@ for label, tb in failures:
   code is `YYZ`, but `TOR` reads far more clearly on a map, so a few codes
   favor clarity over the literal airport code. A handful of especially
   unambiguous cities (`LA`, `SF`, `DC`, `KC`, `SJ`) use 2 characters. The
-  only hard requirement enforced is uniqueness across all 100 cities.
+  only hard requirement enforced is uniqueness across the whole list.
 - **Data source**: [Meteostat](https://meteostat.net/), which aggregates
   NOAA/NWS (and other) station daily summaries. Station histories vary in
   length — some (e.g. long-running first-order airports) go back 80+ years;
@@ -1138,15 +1180,36 @@ for label, tb in failures:
   for why (same `DEBUG_RAISE`/`failures` mechanism as any other city).
 - **The maps now span three countries, so Alaska and Hawaii get their own
   inset panels.** Once the extent had to stretch from a CONUS-only view to
-  cover Canada (north to Edmonton/Calgary) and Mexico (south to Puebla),
-  Anchorage and Honolulu ended up too far outside it to plot directly —
-  Anchorage is well north of every Canadian city here, and Honolulu is in
-  the middle of the Pacific. Rather than silently dropping either, both
-  maps give them a small zoomed-in inset in the otherwise-empty bottom-left
-  corner (open ocean/Baja California on the main map), the same treatment
-  most national US maps use. `render_temp_map()` in the setup cell is
-  shared by both the daily-high and daily-low maps so this logic (and the
-  code-label annotation logic) exists in exactly one place.
+  cover Canada (north to Edmonton/Calgary) and Mexico/Puerto Rico, Anchorage,
+  Fairbanks, and Honolulu ended up too far outside it to plot directly.
+  Rather than silently dropping them, both maps give Alaska and Hawaii a
+  small inset panel each, placed flush against the bottom-left corner and
+  directly against each other. Insets are defined purely by their own
+  geographic extent (a lon/lat box), not a hardcoded city list, so both
+  Alaska cities land in the same inset automatically rather than needing
+  special-casing — and Alaska's extent is deliberately wide (not zoomed
+  tight on Anchorage alone) so the state's outline actually reads as
+  Alaska rather than an unlabeled stretch of coastline. `render_temp_map()`
+  in the setup cell is shared by both the daily-high and daily-low maps so
+  this logic (and the code-label annotation logic) exists in exactly one
+  place.
+- **The legend lives outside the map image, as HTML, not inside it.** With
+  100+ cities, a matplotlib legend competing for space inside the figure
+  meant shrinking the map (and the legend itself) to the point of being
+  hard to read on the page. `render_month_legend()` prints the same
+  color-to-tier mapping as an ordinary flex-wrapped row of HTML swatches
+  underneath the image instead — real text at the page's own font size
+  rather than baked into a fixed-resolution raster, and it frees the whole
+  figure for the map itself. It has no heading of its own since the map's
+  title directly above it already says what the colors mean.
+- **The bottom tier's label now matches what the code actually checks.**
+  It previously read "Not close all month (<3 days within 20°F)," but
+  `classify_month()` never actually checks a 20°F band anywhere — that
+  tier is reached purely as the fallback once every narrower band above it
+  (down to "at least 1 day within 10°F") has failed to match, i.e. zero
+  days came within 10°F all month. Relabeled to "No days within 10°F of
+  record" (or "...of record low") to say exactly that instead of
+  describing a threshold the code doesn't use.
 - **Dense clusters of cities can produce overlapping code labels.** Labels
   are placed with a small fixed pixel offset from each point, not by any
   collision-avoidance algorithm — in a tightly-packed region (e.g. the
