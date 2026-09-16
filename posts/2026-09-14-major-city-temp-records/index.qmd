@@ -38,6 +38,9 @@ bottom), it:
 5. Focuses on the **most recently fully-completed calendar month** and, for
    each city, counts how many days that month landed in each band relative
    to its record high and its record low — then maps both.
+6. Plots a plain **reference map** of every city's location, for anyone
+   who just wants to see where all of them are without any temperature
+   data attached.
 
 ::: {.callout-important}
 **This is a live, self-refreshing page, not a one-time snapshot.** There's
@@ -113,6 +116,15 @@ meteostat.config.block_large_requests = False
 # Birmingham AL, and St. Louis. A second round then added 25 more US
 # cities (state capitals and other notable/requested cities that weren't
 # already covered by population alone), bringing the US total to 75.
+# Further rounds: Fairbanks AK and San Juan PR added; the crowded
+# Toronto-area Canadian cluster thinned (Hamilton/London/Kitchener/Windsor
+# removed) and rebalanced toward provinces with no representation
+# (Victoria BC, Moncton NB, St. John's NL, Charlottetown PE); Tijuana
+# removed. Most recently: El Paso, Rochester NY, Manchester NH, Puebla,
+# and Gatineau QC (effectively a duplicate point right next to Ottawa at
+# this map's scale) removed and replaced 1-for-1 with Pittsburgh PA, Bend
+# OR, Oaxaca MX, Puerto Vallarta MX, and Cabo San Lucas MX; Colorado
+# Springs CO dropped last to hold the total at exactly 100.
 CITIES = [
     # --- Most populous US cities (proxy for "most influential") ---
     ("New York", "NY", 40.7128, -74.0060, "NYC"), ("Los Angeles", "CA", 34.0522, -118.2437, "LA"),
@@ -125,7 +137,7 @@ CITIES = [
     ("Indianapolis", "IN", 39.7684, -86.1581, "IND"), ("San Francisco", "CA", 37.7749, -122.4194, "SF"),
     ("Seattle", "WA", 47.6062, -122.3321, "SEA"), ("Denver", "CO", 39.7392, -104.9903, "DEN"),
     ("Oklahoma City", "OK", 35.4676, -97.5164, "OKC"), ("Nashville", "TN", 36.1627, -86.7816, "NSH"),
-    ("El Paso", "TX", 31.7619, -106.4850, "ELP"), ("Washington", "DC", 38.9072, -77.0369, "DC"),
+    ("Washington", "DC", 38.9072, -77.0369, "DC"),
     ("Las Vegas", "NV", 36.1699, -115.1398, "LAS"), ("Boston", "MA", 42.3601, -71.0589, "BOS"),
     ("Detroit", "MI", 42.3314, -83.0458, "DET"), ("Portland", "OR", 45.5152, -122.6784, "PDX"),
     ("Louisville", "KY", 38.2527, -85.7585, "LOU"), ("Memphis", "TN", 35.1495, -90.0490, "MEM"),
@@ -134,7 +146,7 @@ CITIES = [
     ("Salt Lake City", "UT", 40.7608, -111.8910, "SLC"), ("Sacramento", "CA", 38.5816, -121.4944, "SAC"),
     ("Birmingham", "AL", 33.5186, -86.8104, "BHM"), ("Kansas City", "MO", 39.0997, -94.5786, "KC"),
     ("Atlanta", "GA", 33.7490, -84.3880, "ATL"), ("Omaha", "NE", 41.2565, -95.9345, "OMA"),
-    ("Colorado Springs", "CO", 38.8339, -104.8214, "COS"), ("Raleigh", "NC", 35.7796, -78.6382, "RAL"),
+    ("Raleigh", "NC", 35.7796, -78.6382, "RAL"),
     ("New Orleans", "LA", 29.9511, -90.0715, "NOL"), ("Virginia Beach", "VA", 36.8529, -75.9780, "VB"),
     ("Miami", "FL", 25.7617, -80.1918, "MIA"), ("Minneapolis", "MN", 44.9778, -93.2650, "MSP"),
     ("Tulsa", "OK", 36.1540, -95.9928, "TUL"), ("Bakersfield", "CA", 35.3733, -119.0187, "BAK"),
@@ -143,7 +155,7 @@ CITIES = [
     # --- Second round: more state capitals / regionally notable US cities ---
     ("Rapid City", "SD", 44.0805, -103.2310, "RAP"), ("Fargo", "ND", 46.8772, -96.7898, "FAR"),
     ("Little Rock", "AR", 34.7465, -92.2896, "LIT"), ("Reno", "NV", 39.5296, -119.8138, "RNO"),
-    ("Buffalo", "NY", 42.8864, -78.8784, "BUF"), ("Rochester", "NY", 43.1566, -77.6088, "ROC"),
+    ("Buffalo", "NY", 42.8864, -78.8784, "BUF"), ("Pittsburgh", "PA", 40.4406, -79.9959, "PIT"),
     ("Knoxville", "TN", 35.9606, -83.9207, "KNX"), ("Charleston", "WV", 38.3498, -81.6326, "CHW"),
     ("Tampa", "FL", 27.9506, -82.4572, "TPA"), ("Flagstaff", "AZ", 35.1983, -111.6513, "FLG"),
     ("Cheyenne", "WY", 41.1400, -104.8202, "CHY"), ("Jackson", "WY", 43.4799, -110.7624, "JAC"),
@@ -152,7 +164,7 @@ CITIES = [
     ("Savannah", "GA", 32.0809, -81.0912, "SAV"), ("Charleston", "SC", 32.7765, -79.9311, "CHS"),
     ("Des Moines", "IA", 41.5868, -93.6250, "DSM"), ("Spokane", "WA", 47.6588, -117.4260, "SPK"),
     ("Portland", "ME", 43.6591, -70.2568, "PME"), ("Burlington", "VT", 44.4759, -73.2121, "BTV"),
-    ("Manchester", "NH", 42.9956, -71.4548, "MAN"), ("Honolulu", "HI", 21.3069, -157.8583, "HNL"),
+    ("Bend", "OR", 44.0582, -121.3153, "BEN"), ("Honolulu", "HI", 21.3069, -157.8583, "HNL"),
     ("Anchorage", "AK", 61.2181, -149.9003, "ANC"), ("Fairbanks", "AK", 64.8378, -147.7164, "FAI"),
     ("San Juan", "PR", 18.4655, -66.1057, "SJU"),
     # --- Canada: 15 most populous cities (city-proper, non-suburb), with the
@@ -164,16 +176,18 @@ CITIES = [
     ("Edmonton", "AB", 53.5461, -113.4938, "EDM"), ("Winnipeg", "MB", 49.8951, -97.1384, "WPG"),
     ("Vancouver", "BC", 49.2827, -123.1207, "VAN"), ("Victoria", "BC", 48.4284, -123.3656, "VIC"),
     ("Quebec City", "QC", 46.8139, -71.2080, "QUE"), ("Halifax", "NS", 44.6488, -63.5752, "HFX"),
-    ("Gatineau", "QC", 45.4765, -75.7013, "GAT"), ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"),
+    ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"),
     ("Moncton", "NB", 46.0878, -64.7782, "MCT"), ("St. John's", "NL", 47.5615, -52.7126, "STJ"),
     ("Charlottetown", "PE", 46.2382, -63.1311, "CHT"),
-    # --- Mexico: most populous cities (municipality-proper, non-suburb);
-    # Tijuana removed ---
+    # --- Mexico: most populous cities plus a few well-known tourist/
+    # regional cities added directly; Tijuana and Puebla removed ---
     ("Mexico City", "MX", 19.4326, -99.1332, "MEX"),
     ("Leon", "MX", 21.1250, -101.6860, "LEN"), ("Ciudad Juarez", "MX", 31.6904, -106.4245, "CJS"),
-    ("Puebla", "MX", 19.0414, -98.2063, "PUE"), ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
+    ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
     ("Monterrey", "MX", 25.6866, -100.3161, "MTY"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
     ("Culiacan", "MX", 24.8091, -107.3940, "CUL"), ("Merida", "MX", 20.9674, -89.5926, "MID"),
+    ("Cabo San Lucas", "MX", 22.8905, -109.9167, "CSL"), ("Oaxaca", "MX", 17.0732, -96.7266, "OAX"),
+    ("Puerto Vallarta", "MX", 20.6534, -105.2253, "PVR"),
 ]
 
 HIST_START = datetime(1885, 1, 1)   # predates nearly every US first-order station's digitized record
@@ -336,30 +350,68 @@ def run_stage(label, fn):
         return None
 
 
-# Alaska (Anchorage, Fairbanks) and Hawaii (Honolulu) sit far outside a
-# North-America-scale map extent otherwise -- rather than silently
-# dropping them, both maps below give each its own small inset panel, the
-# same treatment most national US maps use. Insets are defined by their
-# own geographic extent (not a fixed city list), so a city belongs to an
-# inset simply by falling inside that extent's lon/lat box -- e.g. both
-# Alaska cities share one inset automatically. Placed flush with the
-# bottom-left corner and directly against each other (Alaska first, so it
-# touches the left edge; Hawaii's box starts exactly where Alaska's ends).
-# Alaska's extent is deliberately wide (not just zoomed to Anchorage) so
-# the state's outline is actually recognizable rather than an unlabeled
-# blob of coastline.
-_AK_RECT = [0.0, 0.0, 0.21, 0.30]
+# Main map clip: 1 degree beyond four named reference cities in each
+# direction (Edmonton north, San Francisco west, St. John's NL east,
+# Puebla MX south -- "Pueblo" as given was almost certainly Puebla, the
+# only spelling that appears anywhere else in this file/list; a literal
+# Pueblo, CO reading would cut off all of Mexico, which contradicts
+# several Mexican cities being added in the same request). Puebla itself
+# was removed from CITIES in this same round, so this is a fixed number
+# now, not a live lookup -- and one consequence worth flagging: Oaxaca
+# (~17.1°N), added in this same round, sits just *south* of this southern
+# clip line and will not actually be visible on the main map as a result
+# (it's still in CITIES, still resolved and tallied, just not inside this
+# particular view).
+MAIN_EXTENT = [-123.4194, -51.7126, 18.0414, 54.5461]
+
+# Alaska (Anchorage, Fairbanks) and Hawaii (Honolulu) sit far outside
+# MAIN_EXTENT -- rather than silently dropping them, both maps below give
+# each its own small inset, positioned to sit within the Pacific Ocean
+# portion of the main map itself (bottom-left: west of Mexico/California)
+# rather than as a separate panel outside the map's frame. Both are
+# zoomed in tight -- Oahu only for Hawaii, the Anchorage/Fairbanks
+# corridor for Alaska -- rather than the full state/island chain, and
+# labeled with just the state/territory name at the top instead of
+# per-city codes, since there isn't room for both a recognizable shape
+# and readable per-city labels at this size. Alaska specifically uses its
+# own Lambert Conformal projection (not the plain lon/lat grid PlateCarree
+# uses) centered on Alaska -- PlateCarree visibly stretches high-latitude
+# land east-west since it doesn't account for longitude lines converging
+# toward the pole, which was making Alaska look wider than it really is.
 INSET_SPECS = [
-    ("Alaska", _AK_RECT, [-172, -128, 54, 72]),
-    ("Hawaii", [_AK_RECT[0] + _AK_RECT[2], 0.0, 0.13, 0.30], [-161, -153, 18, 23]),
+    {
+        "name": "Alaska", "rect": [0.010, 0.185, 0.145, 0.205],
+        "extent": [-155, -140, 58, 66],
+        "projection": ccrs.LambertConformal(central_longitude=-147.5, central_latitude=62),
+    },
+    {
+        "name": "Hawaii", "rect": [0.160, 0.185, 0.085, 0.205],
+        "extent": [-158.35, -157.6, 21.2, 21.8],
+        "projection": ccrs.PlateCarree(),
+    },
 ]
 
 
 def in_any_inset(df):
     mask = pd.Series(False, index=df.index)
-    for _, _, (lon0, lon1, lat0, lat1) in INSET_SPECS:
+    for spec in INSET_SPECS:
+        lon0, lon1, lat0, lat1 = spec["extent"]
         mask |= (df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)
     return mask
+
+
+def in_main_extent(df):
+    """
+    A point outside set_extent() doesn't get a marker drawn (scatter
+    respects the axes clip box), but annotate() draws its text regardless
+    -- so without this filter, a city like Oaxaca that falls just outside
+    MAIN_EXTENT (see the caveat where MAIN_EXTENT is defined) would show
+    up as a code label floating below the map frame with no dot attached
+    to it. Cities excluded here are still fully resolved and tallied
+    elsewhere on the page; they just don't get plotted on this map.
+    """
+    lon0, lon1, lat0, lat1 = MAIN_EXTENT
+    return (df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)
 
 
 def add_basemap(axis):
@@ -375,76 +427,79 @@ def add_basemap(axis):
         linewidth=0.4, zorder=1)
 
 
-def plot_cities(axis, sub_df):
-    """Scatter each city's point, labeled with its short code (offset in
-    fixed screen-space points, not data coordinates, so labels stay a
-    legible fixed size regardless of the axes' zoom level)."""
+def plot_cities(axis, sub_df, show_labels=True, marker_color=None, s=70):
+    """
+    Scatter each city's point, optionally labeled with its short code
+    (offset in fixed screen-space points, not data coordinates, so labels
+    stay a legible fixed size regardless of the axes' zoom level).
+    marker_color overrides each row's own "Tier color" with one fixed
+    color for every point (used by the reference map in section 9, where
+    every dot is plain black rather than tier-colored).
+    """
     for _, row in sub_df.iterrows():
-        axis.scatter(row["lon"], row["lat"], s=70, color=row["Tier color"],
+        axis.scatter(row["lon"], row["lat"], s=s, color=marker_color or row["Tier color"],
                      edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
-        axis.annotate(
-            row["Code"], xy=(row["lon"], row["lat"]),
-            xycoords=ccrs.PlateCarree()._as_mpl_transform(axis),
-            xytext=(4, 3), textcoords="offset points", fontsize=5.5, zorder=6,
-            bbox=dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.7),
-        )
+        if show_labels:
+            axis.annotate(
+                row["Code"], xy=(row["lon"], row["lat"]),
+                xycoords=ccrs.PlateCarree()._as_mpl_transform(axis),
+                xytext=(4, 3), textcoords="offset points", fontsize=6.5, zorder=6,
+                bbox=dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.7),
+            )
 
 
-def render_temp_map(df, plot_title, output_path):
+def draw_insets(fig, df, basemap_fn=add_basemap, marker_color=None, s=70):
+    """
+    Shared by every map in this post that uses MAIN_EXTENT -- draws the
+    Alaska/Hawaii insets defined in INSET_SPECS. basemap_fn lets the plain
+    reference map (section 9) reuse this for its own stock_img() terrain
+    background instead of the flat add_basemap() the tier-colored maps use,
+    without duplicating the inset-layout logic itself.
+    """
+    for spec in INSET_SPECS:
+        lon0, lon1, lat0, lat1 = spec["extent"]
+        sub = df[(df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)]
+        inset_ax = fig.add_axes(spec["rect"], projection=spec["projection"])
+        inset_ax.set_extent(spec["extent"], crs=ccrs.PlateCarree())
+        basemap_fn(inset_ax)
+        if not sub.empty:
+            plot_cities(inset_ax, sub, show_labels=False, marker_color=marker_color, s=s)
+        inset_ax.text(0.5, 0.95, spec["name"], transform=inset_ax.transAxes, ha="center", va="top",
+                       fontsize=7, fontweight="bold", zorder=10,
+                       bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.75))
+        for spine in inset_ax.spines.values():
+            spine.set_visible(False)
+
+
+def render_temp_map(df, tiers, plot_title, output_path):
     """
     Shared by both the daily-high and daily-low maps below: draws the main
-    US/Canada/Mexico extent plus the Alaska/Hawaii insets, coloring each
-    city's point by its assigned tier and labeling it with its short code.
-    No legend is drawn on the figure itself -- with 100+ cities to fit, a
-    legend competing for space inside the image made everything (map and
-    legend both) too small to read on the page. `render_month_legend()`
-    below renders the same information as ordinary HTML instead, placed
-    next to the image, which also means its text stays crisp at any zoom
-    level rather than being baked into the raster image.
+    map plus the Alaska/Hawaii insets, coloring each city's point by its
+    assigned tier and labeling it with its short code. The legend is
+    drawn on the figure itself as a horizontal band across the bottom
+    (`fig.legend(..., loc="lower center")`), not off to the side, so the
+    map above it can use almost the entire figure width.
     """
-    fig = plt.figure(figsize=(13, 7.8))
-    proj = ccrs.LambertConformal(central_longitude=-90, central_latitude=38)
-    ax = fig.add_axes([0.005, 0.02, 0.99, 0.94], projection=proj)
-    ax.set_extent([-126, -50, 14, 58], crs=ccrs.PlateCarree())
+    fig = plt.figure(figsize=(13, 9))
+    proj = ccrs.LambertConformal(central_longitude=-88, central_latitude=36)
+    ax = fig.add_axes([0.005, 0.165, 0.99, 0.805], projection=proj)
+    ax.set_extent(MAIN_EXTENT, crs=ccrs.PlateCarree())
     add_basemap(ax)
-    plot_cities(ax, df[~in_any_inset(df)])
+    plot_cities(ax, df[in_main_extent(df) & ~in_any_inset(df)])
     ax.set_title(plot_title, fontsize=13)
 
-    for label, rect, extent in INSET_SPECS:
-        lon0, lon1, lat0, lat1 = extent
-        sub = df[(df["lon"] >= lon0) & (df["lon"] <= lon1) & (df["lat"] >= lat0) & (df["lat"] <= lat1)]
-        if sub.empty:
-            continue
-        inset_ax = fig.add_axes(rect, projection=ccrs.PlateCarree())
-        inset_ax.set_extent(extent, crs=ccrs.PlateCarree())
-        add_basemap(inset_ax)
-        plot_cities(inset_ax, sub)
-        for spine in inset_ax.spines.values():
-            spine.set_edgecolor("#888888")
-            spine.set_linewidth(0.8)
+    draw_insets(fig, df)
+
+    legend_handles = [
+        plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
+                   markeredgecolor="black", markersize=8, label=label)
+        for color, label in tiers
+    ]
+    fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, 0.0),
+               ncol=3, fontsize=8.5, framealpha=0.9)
 
     fig.savefig(output_path, format="png", dpi=150)
     plt.close(fig)
-
-
-def render_month_legend(tiers):
-    """
-    HTML color-key for a MONTH_TIERS-style list, printed next to (not
-    inside) the map image -- see render_temp_map()'s docstring for why.
-    No heading: the map's own title above it already says what the colors
-    are for.
-    """
-    swatches = "".join(
-        f'<span style="white-space:nowrap;margin-right:1.1em;">'
-        f'<span style="display:inline-block;width:0.85em;height:0.85em;border-radius:50%;'
-        f'background:{color};border:1px solid #333;margin-right:0.35em;vertical-align:middle;"></span>'
-        f'<span style="vertical-align:middle;">{label}</span></span>'
-        for color, label in tiers
-    )
-    print(
-        f'<div style="display:flex;flex-wrap:wrap;row-gap:0.4em;font-size:0.85em;'
-        f'margin:0.3em 0 1.2em;">{swatches}</div>'
-    )
 ```
 
 ## 1. Find each city's nearest usable weather station
@@ -825,7 +880,7 @@ monthly_df.drop(columns=["Tier color"])
 slug = "city-temp-records"
 image_path = IMAGE_DIR / f"{slug}.png"
 render_temp_map(
-    monthly_df,
+    monthly_df, MONTH_TIERS,
     plot_title=f"{len(CITIES)} North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high",
     output_path=image_path,
 )
@@ -835,7 +890,6 @@ render_temp_map(
 #| label: render-map-tag
 #| output: asis
 print(f'<img src="{image_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
-render_month_legend(MONTH_TIERS)
 ```
 
 ## 6. Back-calculated running tally since 2020 — daily lows
@@ -975,7 +1029,7 @@ monthly_df_min.drop(columns=["Tier color"])
 slug_min = "city-temp-records-low"
 image_path_min = IMAGE_DIR / f"{slug_min}.png"
 render_temp_map(
-    monthly_df_min,
+    monthly_df_min, MONTH_TIERS_MIN,
     plot_title=f"{len(CITIES)} North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low",
     output_path=image_path_min,
 )
@@ -985,7 +1039,58 @@ render_temp_map(
 #| label: render-map-min-tag
 #| output: asis
 print(f'<img src="{image_path_min.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
-render_month_legend(MONTH_TIERS_MIN)
+```
+
+## 9. Where every city sits
+
+A plain reference map -- every city's location as a black dot labeled with
+its code, no temperature data involved, against a general-purpose terrain
+background for geographic context.
+
+```{python}
+#| label: render-reference-map
+#| warning: false
+
+def add_terrain_basemap(axis):
+    """Like add_basemap(), but with Cartopy's bundled hypsometric-tint +
+    shaded-relief raster underneath instead of a flat land color -- see
+    the caveats for why this is real elevation shading but not a genuine
+    climate-zone classification."""
+    axis.stock_img()
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "physical", "coastline", "50m", edgecolor="#333333", facecolor="none"), linewidth=0.8, zorder=1)
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="#555555", facecolor="none"),
+        linewidth=0.7, zorder=1)
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#777777", facecolor="none"),
+        linewidth=0.4, zorder=1)
+
+
+reference_df = pd.DataFrame([
+    {"City": f"{name}, {state}", "lat": lat, "lon": lon, "Code": code}
+    for name, state, lat, lon, code in CITIES
+])
+
+fig = plt.figure(figsize=(13, 9))
+proj = ccrs.LambertConformal(central_longitude=-88, central_latitude=36)
+ax = fig.add_axes([0.005, 0.02, 0.99, 0.94], projection=proj)
+ax.set_extent(MAIN_EXTENT, crs=ccrs.PlateCarree())
+add_terrain_basemap(ax)
+plot_cities(ax, reference_df[in_main_extent(reference_df) & ~in_any_inset(reference_df)], marker_color="black", s=55)
+ax.set_title(f"All {len(CITIES)} cities tracked by this page", fontsize=13)
+
+draw_insets(fig, reference_df, basemap_fn=add_terrain_basemap, marker_color="black", s=55)
+
+reference_map_path = IMAGE_DIR / "city-reference-map.png"
+fig.savefig(reference_map_path, format="png", dpi=150)
+plt.close(fig)
+```
+
+```{python}
+#| label: render-reference-map-tag
+#| output: asis
+print(f'<img src="{reference_map_path.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
 
 for label, tb in failures:
     print(f"<!-- Skipped {label}:\n{tb}\n-->")
@@ -1178,30 +1283,42 @@ for label, tb in failures:
   genuinely unknown until a render actually runs — if a Canadian or Mexican
   city is missing from a given month's map, check the HTML source comments
   for why (same `DEBUG_RAISE`/`failures` mechanism as any other city).
-- **The maps now span three countries, so Alaska and Hawaii get their own
-  inset panels.** Once the extent had to stretch from a CONUS-only view to
-  cover Canada (north to Edmonton/Calgary) and Mexico/Puerto Rico, Anchorage,
-  Fairbanks, and Honolulu ended up too far outside it to plot directly.
-  Rather than silently dropping them, both maps give Alaska and Hawaii a
-  small inset panel each, placed flush against the bottom-left corner and
-  directly against each other. Insets are defined purely by their own
-  geographic extent (a lon/lat box), not a hardcoded city list, so both
-  Alaska cities land in the same inset automatically rather than needing
-  special-casing — and Alaska's extent is deliberately wide (not zoomed
-  tight on Anchorage alone) so the state's outline actually reads as
-  Alaska rather than an unlabeled stretch of coastline. `render_temp_map()`
-  in the setup cell is shared by both the daily-high and daily-low maps so
-  this logic (and the code-label annotation logic) exists in exactly one
-  place.
-- **The legend lives outside the map image, as HTML, not inside it.** With
-  100+ cities, a matplotlib legend competing for space inside the figure
-  meant shrinking the map (and the legend itself) to the point of being
-  hard to read on the page. `render_month_legend()` prints the same
-  color-to-tier mapping as an ordinary flex-wrapped row of HTML swatches
-  underneath the image instead — real text at the page's own font size
-  rather than baked into a fixed-resolution raster, and it frees the whole
-  figure for the map itself. It has no heading of its own since the map's
-  title directly above it already says what the colors mean.
+- **The main map is deliberately clipped, not a loose "fit everything"
+  extent.** `MAIN_EXTENT` is defined as exactly 1° beyond four named
+  reference points — north of Edmonton, west of San Francisco, east of
+  St. John's NL, south of Puebla ("Pueblo" as given was read as Puebla,
+  the only spelling used anywhere else in this file; a literal Pueblo, CO
+  reading would cut off all of Mexico, which can't be right given Mexican
+  cities were being added in the same request). One real consequence: with
+  Puebla itself removed from `CITIES` in this same round, Oaxaca (added at
+  the same time, ~17.1°N) now sits just *south* of that clip line and
+  won't actually show up on the main map, even though it's still in the
+  city list and still fully tallied — a direct side effect of taking the
+  clip instruction literally rather than quietly padding it out to fit
+  every city that happened to get added alongside it.
+- **Alaska and Hawaii get their own insets, positioned inside the map's
+  own Pacific Ocean space rather than as a separate outside panel** —
+  bottom-left, roughly where the ocean west of Mexico/California actually
+  is on this projection. Both are zoomed in tight (Oahu only for Hawaii;
+  the Anchorage/Fairbanks corridor for Alaska) and labeled with just the
+  state name at the top rather than per-city codes, since there isn't room
+  for a recognizable shape *and* readable per-city labels at this size.
+  Insets are defined purely by their own geographic extent (a lon/lat
+  box), not a hardcoded city list, so both Alaska cities land in the same
+  inset automatically. Alaska specifically uses its own Lambert Conformal
+  projection centered on Alaska rather than the plain PlateCarree grid —
+  PlateCarree visibly stretches high-latitude land east-west (it doesn't
+  account for longitude lines converging toward the pole), which was
+  making Alaska look wider than it actually is.
+- **The legend is back inside the map image, as a horizontal band across
+  the bottom.** An earlier version moved it to a separate HTML color-key
+  below the image instead, to stop it from competing with the map for
+  space — reversed here in favor of a single self-contained image, now
+  laid out as `fig.legend(..., loc="lower center", ncol=3)` instead of
+  the tall single-column list on the right that a plain matplotlib legend
+  defaults to, so it still doesn't eat much vertical room. City-code
+  labels are also 1pt larger than the first version of this layout
+  (6.5pt, up from 5.5pt) now that there's more room to work with.
 - **The bottom tier's label now matches what the code actually checks.**
   It previously read "Not close all month (<3 days within 20°F)," but
   `classify_month()` never actually checks a 20°F band anywhere — that
@@ -1213,11 +1330,26 @@ for label, tb in failures:
 - **Dense clusters of cities can produce overlapping code labels.** Labels
   are placed with a small fixed pixel offset from each point, not by any
   collision-avoidance algorithm — in a tightly-packed region (e.g. the
-  Boston-New York-Philadelphia-DC corridor, or Toronto-Buffalo-Rochester),
+  Boston-New York-Philadelphia-DC corridor, or the Toronto/Ottawa area),
   some labels may overlap or sit close enough to be hard to read at a
   glance. The underlying `monthly_df` / `monthly_df_min` tables above each
   map list every city's code unambiguously if a label on the map itself is
   unclear.
+- **Section 9's background is real elevation-derived shading, but not a
+  genuine climate classification map.** `ax.stock_img()` draws Cartopy's
+  own bundled Natural Earth raster — an actual cross-blended hypsometric
+  tint + shaded relief image, not a placeholder — which is why it can be
+  used with no extra data fetching and no risk of an external climate
+  dataset going away or changing format on some future monthly render.
+  It gives a genuine, real terrain/vegetation-tinted picture of North
+  America, but it is **not** a true Köppen-Geiger climate zone
+  classification (the kind of map that shades regions by "humid
+  subtropical," "arid," "continental," etc.) — building one of those
+  properly needs an external climate dataset (e.g. Beck et al.'s published
+  Köppen-Geiger rasters), which wasn't added here to avoid depending on a
+  data source of unknown long-term stability for an automated monthly
+  render. Worth revisiting with a specific, confirmed-stable source if
+  genuine climate zones (rather than terrain shading) matter for this map.
 
 ## Keeping this page current
 
