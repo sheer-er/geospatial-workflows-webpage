@@ -1,10 +1,11 @@
 ---
-title: "How Close Did Your City Come to a Temperature Record Last Month? Tracking 50 Major US Cities"
+title: "How Close Did Your City Come to a Temperature Record Last Month? Tracking 100 Cities Across North America"
 description: >
-  Once a month, pulls each of the 50 most populous US cities' weather
-  station, tallies how many days in the prior calendar month landed near,
-  at, or beyond that station's all-time high (and separately, all-time low)
-  for the day, and maps both -- plus a running multi-year tally since 2020.
+  Once a month, pulls each of 100 major US, Canadian, and Mexican cities'
+  weather station, tallies how many days in the prior calendar month
+  landed near, at, or beyond that station's all-time high (and separately,
+  all-time low) for the day, and maps both -- plus a running multi-year
+  tally since 2020.
 date: 2026-09-14
 categories: [climate, temperature-records, meteostat, extreme-heat]
 jupyter: python3
@@ -21,9 +22,9 @@ resources:
 Every time this page is rendered (once a month — see the note at the
 bottom), it:
 
-1. Takes a fixed list of the **50 most populous US cities** (a standard proxy
-   for "most influential" — see the caveats section for why population,
-   not some other ranking, was used).
+1. Takes a fixed list of **100 cities** across the US, Canada, and Mexico
+   (mostly by population, as a standard proxy for "most influential" — see
+   the caveats section for the details and judgment calls involved).
 2. For each city, finds the **most complete nearby weather station** (the
    candidate with the longest history and the best coverage of the target
    month, not just the closest one).
@@ -91,44 +92,83 @@ logging.getLogger("meteostat").setLevel(logging.ERROR)
 meteostat.config.block_large_requests = False
 
 # --- Configuration -----------------------------------------------------
-# The 50 most populous US cities (~2023-2024 Census estimates) as a
-# standard, reproducible stand-in for "most influential" -- see the
-# Method notes for why population (not e.g. GDP or media reach) was used.
-# Dallas/Fort Worth/Arlington originally all had their own points (three
-# dots on top of each other in the DFW metro); trimmed to just Dallas.
-# Oakland (SF Bay Area, already covered by San Francisco/San Jose) was
-# swapped for three states that otherwise had zero representation:
-# Montana (Billings), Idaho (Boise), and the Dakotas (Sioux Falls, the
-# largest city in either Dakota). A few more swaps followed: Long Beach ->
-# New Orleans, Fresno -> Salt Lake City, Mesa (the third Arizona point
-# alongside Phoenix and Tucson) -> Birmingham AL (the most populous of
-# Birmingham AL / Mobile AL / Jackson MS), and Baltimore -> St. Louis.
+# 100 cities: the 75 most populous/relevant US cities, plus the 15 most
+# populous Canadian cities and 10 most populous Mexican cities (both by
+# city-proper population, not metro, deliberately excluding satellite
+# cities that are really just suburbs of a bigger neighbor -- e.g.
+# Mississauga/Brampton/Surrey (Toronto/Vancouver suburbs) and Ecatepec/
+# Zapopan/Guadalupe (Mexico City/Guadalajara/Monterrey suburbs) -- even
+# though several of those are individually large enough to outrank cities
+# that ARE included. Each entry also carries a short, mostly-unique-letter
+# CODE used to label its point on the maps below -- see "City codes" in
+# the caveats for how those were assigned and why most are 3 characters
+# (often the real IATA airport code) rather than 2.
+#
+# US list history: Dallas/Fort Worth/Arlington originally all had their
+# own points (three dots on top of each other in the DFW metro); trimmed
+# to just Dallas. Oakland (already covered by San Francisco/San Jose) was
+# swapped for Billings MT, Boise ID, and Sioux Falls SD -- three states
+# that otherwise had zero representation. Long Beach, Fresno, Mesa, and
+# Baltimore were later swapped for New Orleans, Salt Lake City,
+# Birmingham AL, and St. Louis. A second round then added 25 more US
+# cities (state capitals and other notable/requested cities that weren't
+# already covered by population alone), bringing the US total to 75.
 CITIES = [
-    ("New York", "NY", 40.7128, -74.0060), ("Los Angeles", "CA", 34.0522, -118.2437),
-    ("Chicago", "IL", 41.8781, -87.6298), ("Houston", "TX", 29.7604, -95.3698),
-    ("Phoenix", "AZ", 33.4484, -112.0740), ("Philadelphia", "PA", 39.9526, -75.1652),
-    ("San Antonio", "TX", 29.4241, -98.4936), ("San Diego", "CA", 32.7157, -117.1611),
-    ("Dallas", "TX", 32.7767, -96.7970), ("Jacksonville", "FL", 30.3322, -81.6557),
-    ("Austin", "TX", 30.2672, -97.7431), ("San Jose", "CA", 37.3382, -121.8863),
-    ("Columbus", "OH", 39.9612, -82.9988), ("Charlotte", "NC", 35.2271, -80.8431),
-    ("Indianapolis", "IN", 39.7684, -86.1581), ("San Francisco", "CA", 37.7749, -122.4194),
-    ("Seattle", "WA", 47.6062, -122.3321), ("Denver", "CO", 39.7392, -104.9903),
-    ("Oklahoma City", "OK", 35.4676, -97.5164), ("Nashville", "TN", 36.1627, -86.7816),
-    ("El Paso", "TX", 31.7619, -106.4850), ("Washington", "DC", 38.9072, -77.0369),
-    ("Las Vegas", "NV", 36.1699, -115.1398), ("Boston", "MA", 42.3601, -71.0589),
-    ("Detroit", "MI", 42.3314, -83.0458), ("Portland", "OR", 45.5152, -122.6784),
-    ("Louisville", "KY", 38.2527, -85.7585), ("Memphis", "TN", 35.1495, -90.0490),
-    ("St. Louis", "MO", 38.6270, -90.1994), ("Milwaukee", "WI", 43.0389, -87.9065),
-    ("Albuquerque", "NM", 35.0844, -106.6504), ("Tucson", "AZ", 32.2226, -110.9747),
-    ("Salt Lake City", "UT", 40.7608, -111.8910), ("Sacramento", "CA", 38.5816, -121.4944),
-    ("Birmingham", "AL", 33.5186, -86.8104), ("Kansas City", "MO", 39.0997, -94.5786),
-    ("Atlanta", "GA", 33.7490, -84.3880), ("Omaha", "NE", 41.2565, -95.9345),
-    ("Colorado Springs", "CO", 38.8339, -104.8214), ("Raleigh", "NC", 35.7796, -78.6382),
-    ("New Orleans", "LA", 29.9511, -90.0715), ("Virginia Beach", "VA", 36.8529, -75.9780),
-    ("Miami", "FL", 25.7617, -80.1918), ("Minneapolis", "MN", 44.9778, -93.2650),
-    ("Tulsa", "OK", 36.1540, -95.9928), ("Bakersfield", "CA", 35.3733, -119.0187),
-    ("Wichita", "KS", 37.6872, -97.3301), ("Billings", "MT", 45.7833, -108.5007),
-    ("Boise", "ID", 43.6150, -116.2023), ("Sioux Falls", "SD", 43.5446, -96.7311),
+    # --- Most populous US cities (proxy for "most influential") ---
+    ("New York", "NY", 40.7128, -74.0060, "NYC"), ("Los Angeles", "CA", 34.0522, -118.2437, "LA"),
+    ("Chicago", "IL", 41.8781, -87.6298, "CHI"), ("Houston", "TX", 29.7604, -95.3698, "HOU"),
+    ("Phoenix", "AZ", 33.4484, -112.0740, "PHX"), ("Philadelphia", "PA", 39.9526, -75.1652, "PHL"),
+    ("San Antonio", "TX", 29.4241, -98.4936, "SAT"), ("San Diego", "CA", 32.7157, -117.1611, "SAN"),
+    ("Dallas", "TX", 32.7767, -96.7970, "DAL"), ("Jacksonville", "FL", 30.3322, -81.6557, "JAX"),
+    ("Austin", "TX", 30.2672, -97.7431, "AUS"), ("San Jose", "CA", 37.3382, -121.8863, "SJ"),
+    ("Columbus", "OH", 39.9612, -82.9988, "COL"), ("Charlotte", "NC", 35.2271, -80.8431, "CLT"),
+    ("Indianapolis", "IN", 39.7684, -86.1581, "IND"), ("San Francisco", "CA", 37.7749, -122.4194, "SF"),
+    ("Seattle", "WA", 47.6062, -122.3321, "SEA"), ("Denver", "CO", 39.7392, -104.9903, "DEN"),
+    ("Oklahoma City", "OK", 35.4676, -97.5164, "OKC"), ("Nashville", "TN", 36.1627, -86.7816, "NSH"),
+    ("El Paso", "TX", 31.7619, -106.4850, "ELP"), ("Washington", "DC", 38.9072, -77.0369, "DC"),
+    ("Las Vegas", "NV", 36.1699, -115.1398, "LAS"), ("Boston", "MA", 42.3601, -71.0589, "BOS"),
+    ("Detroit", "MI", 42.3314, -83.0458, "DET"), ("Portland", "OR", 45.5152, -122.6784, "PDX"),
+    ("Louisville", "KY", 38.2527, -85.7585, "LOU"), ("Memphis", "TN", 35.1495, -90.0490, "MEM"),
+    ("St. Louis", "MO", 38.6270, -90.1994, "STL"), ("Milwaukee", "WI", 43.0389, -87.9065, "MKE"),
+    ("Albuquerque", "NM", 35.0844, -106.6504, "ABQ"), ("Tucson", "AZ", 32.2226, -110.9747, "TUS"),
+    ("Salt Lake City", "UT", 40.7608, -111.8910, "SLC"), ("Sacramento", "CA", 38.5816, -121.4944, "SAC"),
+    ("Birmingham", "AL", 33.5186, -86.8104, "BHM"), ("Kansas City", "MO", 39.0997, -94.5786, "KC"),
+    ("Atlanta", "GA", 33.7490, -84.3880, "ATL"), ("Omaha", "NE", 41.2565, -95.9345, "OMA"),
+    ("Colorado Springs", "CO", 38.8339, -104.8214, "COS"), ("Raleigh", "NC", 35.7796, -78.6382, "RAL"),
+    ("New Orleans", "LA", 29.9511, -90.0715, "NOL"), ("Virginia Beach", "VA", 36.8529, -75.9780, "VB"),
+    ("Miami", "FL", 25.7617, -80.1918, "MIA"), ("Minneapolis", "MN", 44.9778, -93.2650, "MSP"),
+    ("Tulsa", "OK", 36.1540, -95.9928, "TUL"), ("Bakersfield", "CA", 35.3733, -119.0187, "BAK"),
+    ("Wichita", "KS", 37.6872, -97.3301, "WIC"), ("Billings", "MT", 45.7833, -108.5007, "BIL"),
+    ("Boise", "ID", 43.6150, -116.2023, "BOI"), ("Sioux Falls", "SD", 43.5446, -96.7311, "SFL"),
+    # --- Second round: more state capitals / regionally notable US cities ---
+    ("Rapid City", "SD", 44.0805, -103.2310, "RAP"), ("Fargo", "ND", 46.8772, -96.7898, "FAR"),
+    ("Little Rock", "AR", 34.7465, -92.2896, "LIT"), ("Reno", "NV", 39.5296, -119.8138, "RNO"),
+    ("Buffalo", "NY", 42.8864, -78.8784, "BUF"), ("Rochester", "NY", 43.1566, -77.6088, "ROC"),
+    ("Knoxville", "TN", 35.9606, -83.9207, "KNX"), ("Charleston", "WV", 38.3498, -81.6326, "CHW"),
+    ("Tampa", "FL", 27.9506, -82.4572, "TPA"), ("Flagstaff", "AZ", 35.1983, -111.6513, "FLG"),
+    ("Cheyenne", "WY", 41.1400, -104.8202, "CHY"), ("Jackson", "WY", 43.4799, -110.7624, "JAC"),
+    ("Jackson", "MS", 32.2988, -90.1848, "JMS"), ("Mobile", "AL", 30.6954, -88.0399, "MOB"),
+    ("Tallahassee", "FL", 30.4383, -84.2807, "TLH"), ("Orlando", "FL", 28.5383, -81.3792, "ORL"),
+    ("Savannah", "GA", 32.0809, -81.0912, "SAV"), ("Charleston", "SC", 32.7765, -79.9311, "CHS"),
+    ("Des Moines", "IA", 41.5868, -93.6250, "DSM"), ("Spokane", "WA", 47.6588, -117.4260, "SPK"),
+    ("Portland", "ME", 43.6591, -70.2568, "PME"), ("Burlington", "VT", 44.4759, -73.2121, "BTV"),
+    ("Manchester", "NH", 42.9956, -71.4548, "MAN"), ("Honolulu", "HI", 21.3069, -157.8583, "HNL"),
+    ("Anchorage", "AK", 61.2181, -149.9003, "ANC"),
+    # --- Canada: 15 most populous cities (city-proper, non-suburb) ---
+    ("Toronto", "ON", 43.6532, -79.3832, "TOR"), ("Montreal", "QC", 45.5017, -73.5673, "MTL"),
+    ("Calgary", "AB", 51.0447, -114.0719, "CGY"), ("Ottawa", "ON", 45.4215, -75.6972, "OTT"),
+    ("Edmonton", "AB", 53.5461, -113.4938, "EDM"), ("Winnipeg", "MB", 49.8951, -97.1384, "WPG"),
+    ("Vancouver", "BC", 49.2827, -123.1207, "VAN"), ("Hamilton", "ON", 43.2557, -79.8711, "HAM"),
+    ("Quebec City", "QC", 46.8139, -71.2080, "QUE"), ("Halifax", "NS", 44.6488, -63.5752, "HFX"),
+    ("London", "ON", 42.9849, -81.2453, "LDN"), ("Gatineau", "QC", 45.4765, -75.7013, "GAT"),
+    ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"), ("Kitchener", "ON", 43.4516, -80.4925, "KIT"),
+    ("Windsor", "ON", 42.3149, -83.0364, "WND"),
+    # --- Mexico: 10 most populous cities (municipality-proper, non-suburb) ---
+    ("Mexico City", "MX", 19.4326, -99.1332, "MEX"), ("Tijuana", "MX", 32.5149, -117.0382, "TIJ"),
+    ("Leon", "MX", 21.1250, -101.6860, "LEN"), ("Ciudad Juarez", "MX", 31.6904, -106.4245, "CJS"),
+    ("Puebla", "MX", 19.0414, -98.2063, "PUE"), ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
+    ("Monterrey", "MX", 25.6866, -100.3161, "MTY"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
+    ("Culiacan", "MX", 24.8091, -107.3940, "CUL"), ("Merida", "MX", 20.9674, -89.5926, "MID"),
 ]
 
 HIST_START = datetime(1885, 1, 1)   # predates nearly every US first-order station's digitized record
@@ -144,8 +184,10 @@ MAX_STALENESS_DAYS = 21             # how far past the target month's end we'll 
 MIN_MONTH_COVERAGE = 0.8            # a candidate station must have data for at least this fraction of
                                      # the target month's days, or it can't support the monthly day-count
                                      # tally below even if its overall history is long
-N_WORKERS = 10                      # station fetches are network-bound (calls out to Meteostat's bulk data),
-                                     # so fetching them concurrently is a large wall-clock win over serial
+N_WORKERS = 16                      # station fetches are network-bound (calls out to Meteostat's bulk data),
+                                     # so fetching them concurrently is a large wall-clock win over serial --
+                                     # raised from 10 once the city list doubled to 100, to keep total
+                                     # render time from doubling along with it
 
 # The page is about the most recently *fully completed* calendar month, not
 # the current (partial) one -- rendering mid-month or later for the prior
@@ -206,19 +248,21 @@ def classify_diff(diff_f, extreme_label):
 # diverging ladder -- checked from most extreme (index 0) to least
 # (index 8), first match wins. Both ends are fully-saturated anchor colors
 # (most extreme in one direction / most extreme in the other), shading
-# through progressively lighter tones toward a neutral gray in the middle.
-# For daily highs (MONTH_TIERS), red = notable heat, blue = far from the
-# hot record. For daily lows (MONTH_TIERS_MIN), this is intentionally
-# *inverted* -- blue = notable cold (a new or near-record low), red = far
-# from the cold record, i.e. a relatively mild month -- see "Why this color
-# ladder" in the caveats.
+# through progressively lighter tones of the SAME hue toward the middle,
+# except for one tier each (index 5) that borrows a light tone from the
+# *other* list's hue instead of a plain gray -- see "Why this color ladder"
+# in the caveats for why. For daily highs (MONTH_TIERS), red = notable
+# heat, blue = far from the hot record. For daily lows (MONTH_TIERS_MIN),
+# this is intentionally *inverted* -- blue = notable cold (a new or
+# near-record low), red = far from the cold record, i.e. a relatively mild
+# month.
 MONTH_TIERS = [
     ("#67000d", "3+ days set a new record (>0.5°F over)"),
     ("#de2d26", "1-2 days set a new record (>0.5°F over)"),
     ("#fc9272", "3+ days tied the record (±0.5°F)"),
     ("#fcbba1", "1-2 days tied the record (±0.5°F)"),
     ("#fee0d2", "3+ days within 3°F of record"),
-    ("#969696", "1-2 days within 3°F of record"),
+    ("#9ecae1", "1-2 days within 3°F of record"),
     ("#6baed6", "3+ days within 10°F of record"),
     ("#2171b5", "At least 1 day within 10°F of record"),
     ("#08306b", "Not close all month (<3 days within 20°F)"),
@@ -230,7 +274,7 @@ MONTH_TIERS_MIN = [
     ("#6baed6", "3+ days tied the record low (±0.5°F)"),
     ("#9ecae1", "1-2 days tied the record low (±0.5°F)"),
     ("#c6dbef", "3+ days within 3°F of record low"),
-    ("#969696", "1-2 days within 3°F of record low"),
+    ("#fcbba1", "1-2 days within 3°F of record low"),
     ("#fee0d2", "3+ days within 10°F of record low"),
     ("#fc9272", "At least 1 day within 10°F of record low"),
     ("#67000d", "Not close all month (<3 days within 20°F of record low)"),
@@ -285,6 +329,90 @@ def run_stage(label, fn):
         tb = traceback.format_exc().replace("--", "- -")
         failures.append((label, tb))
         return None
+
+
+# Anchorage and Honolulu sit far outside a North-America-scale map extent
+# otherwise (Anchorage is well north of even the Canadian cities here;
+# Honolulu is in the middle of the Pacific) -- rather than silently
+# dropping them, both maps below give them their own small inset panel,
+# the same treatment most national US maps use for Alaska and Hawaii.
+OUTLYING_CITIES = {"Anchorage, AK", "Honolulu, HI"}
+INSET_SPECS = [
+    ("Anchorage, AK", [0.03, 0.24, 0.17, 0.17], [-155, -145, 58, 63]),
+    ("Honolulu, HI", [0.03, 0.05, 0.17, 0.17], [-161, -153, 18, 23]),
+]
+
+
+def add_basemap(axis):
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "physical", "land", "50m", edgecolor="none", facecolor="#f2f2f2"), zorder=0)
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "physical", "coastline", "50m", edgecolor="#4d4d4d", facecolor="none"), linewidth=0.8, zorder=1)
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="#888888", facecolor="none"),
+        linewidth=0.7, zorder=1)
+    axis.add_feature(cfeature.NaturalEarthFeature(
+        "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#bbbbbb", facecolor="none"),
+        linewidth=0.4, zorder=1)
+
+
+def plot_cities(axis, sub_df):
+    """Scatter each city's point, labeled with its short code (offset in
+    fixed screen-space points, not data coordinates, so labels stay a
+    legible fixed size regardless of the axes' zoom level)."""
+    for _, row in sub_df.iterrows():
+        axis.scatter(row["lon"], row["lat"], s=70, color=row["Tier color"],
+                     edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
+        axis.annotate(
+            row["Code"], xy=(row["lon"], row["lat"]),
+            xycoords=ccrs.PlateCarree()._as_mpl_transform(axis),
+            xytext=(4, 3), textcoords="offset points", fontsize=5.5, zorder=6,
+            bbox=dict(boxstyle="round,pad=0.1", fc="white", ec="none", alpha=0.7),
+        )
+
+
+def render_temp_map(df, tiers, legend_title, plot_title, output_path):
+    """
+    Shared by both the daily-high and daily-low maps below: draws the main
+    US/Canada/Mexico extent plus the two outlier insets, coloring each
+    city's point by its assigned tier and labeling it with its short code.
+    """
+    # Figure is wider than the map itself needs, on purpose -- the daily-low
+    # legend's longer labels ("...of record low") were getting clipped at
+    # the figure edge when the legend area was sized for the shorter
+    # daily-high labels; keeping the map's own width the same in absolute
+    # inches while widening the figure leaves the legend enough room for
+    # either.
+    fig = plt.figure(figsize=(14.5, 7.5))
+    proj = ccrs.LambertConformal(central_longitude=-98, central_latitude=39)
+    ax = fig.add_axes([0.01, 0.03, 0.66, 0.93], projection=proj)
+    ax.set_extent([-128, -58, 14, 58], crs=ccrs.PlateCarree())
+    add_basemap(ax)
+    plot_cities(ax, df[~df["City"].isin(OUTLYING_CITIES)])
+    ax.set_title(plot_title, fontsize=12)
+
+    legend_handles = [
+        plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
+                   markeredgecolor="black", markersize=8, label=label)
+        for color, label in tiers
+    ]
+    fig.legend(handles=legend_handles, loc="center left", bbox_to_anchor=(0.685, 0.5),
+               fontsize=7.5, title=legend_title, title_fontsize=8, framealpha=0.9)
+
+    for city_label, rect, extent in INSET_SPECS:
+        sub = df[df["City"] == city_label]
+        if sub.empty:
+            continue
+        inset_ax = fig.add_axes(rect, projection=ccrs.PlateCarree())
+        inset_ax.set_extent(extent, crs=ccrs.PlateCarree())
+        add_basemap(inset_ax)
+        plot_cities(inset_ax, sub)
+        for spine in inset_ax.spines.values():
+            spine.set_edgecolor("#888888")
+            spine.set_linewidth(0.8)
+
+    fig.savefig(output_path, format="png", dpi=150)
+    plt.close(fig)
 ```
 
 ## 1. Find each city's nearest usable weather station
@@ -299,7 +427,7 @@ def find_candidate_stations(lat, lon):
 
 
 city_candidates = {}
-for name, state, lat, lon in CITIES:
+for name, state, lat, lon, code in CITIES:
     label = f"{name}, {state}"
     candidates = run_stage(f"{label} (station lookup)",
                             lambda lat=lat, lon=lon: find_candidate_stations(lat, lon))
@@ -411,7 +539,7 @@ results = {}
 with ThreadPoolExecutor(max_workers=N_WORKERS) as pool:
     futures = {
         pool.submit(resolve_city, label, city_candidates[label]): label
-        for name, state, lat, lon in CITIES
+        for name, state, lat, lon, code in CITIES
         for label in [f"{name}, {state}"]
     }
     for future in futures:
@@ -632,7 +760,7 @@ month_slice = daily_tally_df[
     (daily_tally_df.index >= TARGET_MONTH_START_TS) & (daily_tally_df.index <= TARGET_MONTH_END_TS)
 ]
 
-city_meta = {f"{name}, {state}": (state, lat, lon) for name, state, lat, lon in CITIES}
+city_meta = {f"{name}, {state}": (state, lat, lon, code) for name, state, lat, lon, code in CITIES}
 
 monthly_rows = []
 for label, group in month_slice.groupby("City"):
@@ -643,9 +771,9 @@ for label, group in month_slice.groupby("City"):
         "days_within_10": int((group["diff_f"] >= -10).sum()),
     }
     color, tier_label = classify_month(counts, MONTH_TIERS)
-    state, lat, lon = city_meta[label]
+    state, lat, lon, code = city_meta[label]
     monthly_rows.append({
-        "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
+        "Code": code, "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
         "Days with data": len(group), "Days above record": counts["days_above"],
         "Days tied (±0.5°F)": counts["days_tied"], "Days within 3°F": counts["days_within_3"],
         "Days within 10°F": counts["days_within_10"],
@@ -662,36 +790,14 @@ monthly_df.drop(columns=["Tier color"])
 #| label: render-map
 #| warning: false
 
-fig, ax = plt.subplots(figsize=(11, 6.5), subplot_kw={"projection": ccrs.LambertConformal(
-    central_longitude=-96, central_latitude=39)})
-ax.set_extent([-125, -66, 22, 50], crs=ccrs.PlateCarree())
-
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "physical", "land", "50m", edgecolor="none", facecolor="#f2f2f2"), zorder=0)
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "physical", "coastline", "50m", edgecolor="#4d4d4d", facecolor="none"), linewidth=0.8, zorder=1)
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#999999", facecolor="none"),
-    linewidth=0.5, zorder=1)
-
-for _, row in monthly_df.iterrows():
-    ax.scatter(row["lon"], row["lat"], s=90, color=row["Tier color"],
-               edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
-
-legend_handles = [
-    plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
-               markeredgecolor="black", markersize=9, label=label)
-    for color, label in MONTH_TIERS
-]
-ax.legend(handles=legend_handles, loc="lower left", fontsize=7.5,
-          title=f"{TARGET_MONTH_START:%B %Y} vs. record high", title_fontsize=8, framealpha=0.9)
-
-ax.set_title(f"50 most populous US cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high")
-
 slug = "city-temp-records"
 image_path = IMAGE_DIR / f"{slug}.png"
-fig.savefig(image_path, format="png", dpi=140, bbox_inches="tight")
-plt.close(fig)
+render_temp_map(
+    monthly_df, MONTH_TIERS,
+    legend_title=f"{TARGET_MONTH_START:%B %Y} vs. record high",
+    plot_title=f"100 North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record high",
+    output_path=image_path,
+)
 ```
 
 ```{python}
@@ -813,9 +919,9 @@ for label, group in month_slice_min.groupby("City"):
         "days_within_10": int((group["diff_f"] >= -10).sum()),
     }
     color, tier_label = classify_month(counts, MONTH_TIERS_MIN)
-    state, lat, lon = city_meta[label]
+    state, lat, lon, code = city_meta[label]
     monthly_rows_min.append({
-        "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
+        "Code": code, "City": label, "Station": results[label]["station"], "lat": lat, "lon": lon,
         "Days with data": len(group), "Days below record": counts["days_above"],
         "Days tied (±0.5°F)": counts["days_tied"], "Days within 3°F": counts["days_within_3"],
         "Days within 10°F": counts["days_within_10"],
@@ -834,36 +940,14 @@ monthly_df_min.drop(columns=["Tier color"])
 #| label: render-map-min
 #| warning: false
 
-fig, ax = plt.subplots(figsize=(11, 6.5), subplot_kw={"projection": ccrs.LambertConformal(
-    central_longitude=-96, central_latitude=39)})
-ax.set_extent([-125, -66, 22, 50], crs=ccrs.PlateCarree())
-
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "physical", "land", "50m", edgecolor="none", facecolor="#f2f2f2"), zorder=0)
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "physical", "coastline", "50m", edgecolor="#4d4d4d", facecolor="none"), linewidth=0.8, zorder=1)
-ax.add_feature(cfeature.NaturalEarthFeature(
-    "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#999999", facecolor="none"),
-    linewidth=0.5, zorder=1)
-
-for _, row in monthly_df_min.iterrows():
-    ax.scatter(row["lon"], row["lat"], s=90, color=row["Tier color"],
-               edgecolors="black", linewidths=0.5, transform=ccrs.PlateCarree(), zorder=5)
-
-legend_handles_min = [
-    plt.Line2D([0], [0], marker="o", linestyle="none", markerfacecolor=color,
-               markeredgecolor="black", markersize=9, label=label)
-    for color, label in MONTH_TIERS_MIN
-]
-ax.legend(handles=legend_handles_min, loc="lower left", fontsize=7.5,
-          title=f"{TARGET_MONTH_START:%B %Y} vs. record low", title_fontsize=8, framealpha=0.9)
-
-ax.set_title(f"50 most populous US cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low")
-
 slug_min = "city-temp-records-low"
 image_path_min = IMAGE_DIR / f"{slug_min}.png"
-fig.savefig(image_path_min, format="png", dpi=140, bbox_inches="tight")
-plt.close(fig)
+render_temp_map(
+    monthly_df_min, MONTH_TIERS_MIN,
+    legend_title=f"{TARGET_MONTH_START:%B %Y} vs. record low",
+    plot_title=f"100 North American cities: {TARGET_MONTH_START:%B %Y} vs. all-time record low",
+    output_path=image_path_min,
+)
 ```
 
 ```{python}
@@ -877,17 +961,42 @@ for label, tb in failures:
 
 ## Method notes & caveats
 
-- **"50 most influential cities" = 50 most populous cities.** Population
-  (~2023-2024 Census estimates) is used as a standard, reproducible proxy
-  for "influential" — there's no single agreed-upon ranking for the latter,
-  and population is the one that's citable and doesn't change based on
-  opinion. Dallas/Fort Worth/Arlington originally plotted three overlapping
-  points in one metro area; trimmed to just Dallas. Oakland (already
-  effectively covered by San Francisco/San Jose in the same Bay Area), Long
-  Beach, Fresno, Mesa, and Baltimore were swapped for Billings MT, Boise ID,
-  Sioux Falls SD, New Orleans LA, Salt Lake City UT, Birmingham AL (the most
-  populous of Birmingham/Mobile AL/Jackson MS), and St. Louis MO — trading a
-  few duplicated/nearby metros for broader geographic spread.
+- **The city list is population plus judgment, not a single strict
+  ranking.** Population (~2023-2024 Census-era estimates) is the base proxy
+  for "most influential" — there's no single agreed-upon ranking for the
+  latter, and population is the one that's citable and doesn't change based
+  on opinion — but several rounds of manual additions/swaps followed:
+  Dallas/Fort Worth/Arlington originally plotted three overlapping points
+  in one metro area (trimmed to just Dallas); Oakland, Long Beach, Fresno,
+  Mesa, and Baltimore were swapped for Billings MT, Boise ID, Sioux Falls
+  SD, New Orleans LA, Salt Lake City UT, Birmingham AL, and St. Louis MO
+  for broader geographic spread; and a further 25 US cities (mostly state
+  capitals and regionally notable cities named directly) were added,
+  bringing the US total to 75.
+- **Canada (15) and Mexico (10) additions, "ignoring suburbs."** Both lists
+  rank by city-*proper* population (not metro), which is what makes
+  "ignoring suburbs" a real judgment call rather than a simple cutoff: a
+  strict population ranking would include several satellite
+  municipalities that are really just part of a bigger neighbor's urban
+  area — Mississauga, Brampton, and Surrey (Toronto/Vancouver suburbs in
+  Canada); Ecatepec, Zapopan, and Guadalupe (Mexico City/Guadalajara/
+  Monterrey suburbs in Mexico) — all of which were excluded even though
+  several individually outrank cities that made the cut. Hamilton, ON and
+  Gatineau, QC were kept despite being near Toronto and Ottawa
+  respectively, since both have distinct identities, economies, and (for
+  Gatineau) even a different provincial government from their larger
+  neighbor, rather than functioning as bedroom suburbs. Ranking data for
+  Mexican cities specifically is less precise here than for the US/Canada
+  lists, so the exact cutoff around 8th-10th place is approximate.
+- **City codes.** Every city gets a short, unique 2-3 character code, used
+  to label its point on the maps in sections 5 and 8. Most are 3
+  characters, often that city's real IATA airport code (`ATL`, `PHX`,
+  `MIA`) — a recognizable 3-letter mnemonic beats a cryptic 2-letter one
+  for most of these cities — though not always: Toronto's real airport
+  code is `YYZ`, but `TOR` reads far more clearly on a map, so a few codes
+  favor clarity over the literal airport code. A handful of especially
+  unambiguous cities (`LA`, `SF`, `DC`, `KC`, `SJ`) use 2 characters. The
+  only hard requirement enforced is uniqueness across all 100 cities.
 - **Data source**: [Meteostat](https://meteostat.net/), which aggregates
   NOAA/NWS (and other) station daily summaries. Station histories vary in
   length — some (e.g. long-running first-order airports) go back 80+ years;
@@ -1014,8 +1123,38 @@ for label, tb in failures:
   the nearest one, per the station-choice note above), so this stage pulls
   roughly `{python} N_CANDIDATE_STATIONS`x more station histories than there
   are cities — still well worth parallelizing, but it's the long pole in
-  this page's render time (on the order of 15-20 minutes for all 50
-  cities). That's a real cost, but at a monthly cadence it's a non-issue.
+  this page's render time. `N_WORKERS` was raised from 10 to 16 when the
+  city list doubled from 50 to 100, to keep the total render from simply
+  doubling too; expect somewhere in the 20-30 minute range for all 100
+  cities. That's a real cost, but at a monthly cadence it's a non-issue.
+- **Canada and Mexico station coverage is untested territory.** Meteostat
+  aggregates station data globally, not just US NOAA/NWS sources, so the
+  same `resolve_city` logic (longest history, target-month coverage,
+  staleness) is applied to Canadian and Mexican candidates with no special
+  casing. Whether those regions have as many long-running, densely-covered
+  stations within `STATION_SEARCH_RADIUS_M` as US cities typically do is
+  genuinely unknown until a render actually runs — if a Canadian or Mexican
+  city is missing from a given month's map, check the HTML source comments
+  for why (same `DEBUG_RAISE`/`failures` mechanism as any other city).
+- **The maps now span three countries, so Alaska and Hawaii get their own
+  inset panels.** Once the extent had to stretch from a CONUS-only view to
+  cover Canada (north to Edmonton/Calgary) and Mexico (south to Puebla),
+  Anchorage and Honolulu ended up too far outside it to plot directly —
+  Anchorage is well north of every Canadian city here, and Honolulu is in
+  the middle of the Pacific. Rather than silently dropping either, both
+  maps give them a small zoomed-in inset in the otherwise-empty bottom-left
+  corner (open ocean/Baja California on the main map), the same treatment
+  most national US maps use. `render_temp_map()` in the setup cell is
+  shared by both the daily-high and daily-low maps so this logic (and the
+  code-label annotation logic) exists in exactly one place.
+- **Dense clusters of cities can produce overlapping code labels.** Labels
+  are placed with a small fixed pixel offset from each point, not by any
+  collision-avoidance algorithm — in a tightly-packed region (e.g. the
+  Boston-New York-Philadelphia-DC corridor, or Toronto-Buffalo-Rochester),
+  some labels may overlap or sit close enough to be hard to read at a
+  glance. The underlying `monthly_df` / `monthly_df_min` tables above each
+  map list every city's code unambiguously if a label on the map itself is
+  unclear.
 
 ## Keeping this page current
 
