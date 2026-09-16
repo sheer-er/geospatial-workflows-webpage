@@ -3,7 +3,7 @@ project:
   output-dir: docs   # GitHub Pages will serve from /docs on the main branch
 
 website:
-  title: "Your Name | Geospatial Workflows"
+  title: "Eric Shearer | Geospatial Vibe Coding"
   description: "Notes and reproducible workflows in satellite precipitation, remote sensing, and hydrology."
   navbar:
     left:
@@ -13,12 +13,12 @@ website:
         text: About
     right:
       - icon: github
-        href: https://github.com/your-github-username
+        href: https://github.com/sheer-er
       - icon: linkedin
-        href: https://www.linkedin.com/in/your-linkedin
+        href: https://www.linkedin.com/in/eric-j-shearer/
 
   page-footer:
-    left: "© 2026 Your Name"
+    left: "CC0 assigned in 2026 by Eric Shearer"
     right: "Built with [Quarto](https://quarto.org)"
 
 format:
