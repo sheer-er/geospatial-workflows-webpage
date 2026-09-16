@@ -82,7 +82,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link href="../../site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-3e9b1289f5f353c49b617ce48ad2bc38.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-445b8638c3d06994fee0907d791121c4.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -578,22 +578,6 @@ Important
 <span id="cb4-104"><a href="#cb4-104" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb4-105"><a href="#cb4-105" aria-hidden="true" tabindex="-1"></a>track_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<div class="cell-output cell-output-stdout">
-<div class="ansi-escaped-output">
-<pre> ╭─<span style="color:rgb(136,33,27);background-color:rgb(255,255,255)">▌</span><span style="color:rgb(12,53,118);background-color:rgb(240,234,210)">▌</span><span style="font-weight:bold;color:rgb(0,0,0);background-color:rgb(240,234,210)">Herbie</span>─────────────────────────────────────────────╮
-
- │ INFO: Created a default config file.                 │
-
- │ You may view/edit Herbie's configuration here:       │
-
- │ <span style="color:rgb(255,153,0)">     /home/runner/.config/herbie/config.toml      </span>   │
-
- ╰──────────────────────────────────────────────────────╯
-
-
-</pre>
-</div>
-</div>
 <div id="load-tracks" class="cell-output cell-output-display" data-execution_count="3">
 <div>
 
@@ -602,13 +586,21 @@ Important
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">note</th>
+<th data-quarto-table-cell-role="th">Storm</th>
+<th data-quarto-table-cell-role="th">HAFS cycle</th>
+<th data-quarto-table-cell-role="th">Track points</th>
+<th data-quarto-table-cell-role="th">Forecast length (h)</th>
+<th data-quarto-table-cell-role="th">Peak category so far</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
-<td>No storm tracks could be loaded.</td>
+<td>Fifteen-E (EP)</td>
+<td>2026-09-16 00Z</td>
+<td>1</td>
+<td>0</td>
+<td>Tropical Depression</td>
 </tr>
 </tbody>
 </table>
@@ -1045,15 +1037,15 @@ Important
 </p>
 <!-- Skipped Fifteen-E (EP):
 Traceback (most recent call last):
-  File "/tmp/ipykernel_2939/1513769429.py", line 102, in run_stage
+  File "/var/folders/2y/xs2wql_1125649wng0_95hzh0000gr/T/ipykernel_23689/1513769429.py", line 102, in run_stage
     return fn()
            ^^^^
-  File "/tmp/ipykernel_2939/3934054208.py", line 82, in <lambda>
-    result = run_stage(storm["dropdown_label"], lambda storm=storm: load_track(storm))
-                                                                    ^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2939/3934054208.py", line 69, in load_track
+  File "/var/folders/2y/xs2wql_1125649wng0_95hzh0000gr/T/ipykernel_23689/2811287546.py", line 148, in <lambda>
+    result = run_stage(entry["storm"]["dropdown_label"], lambda entry=entry: composite_storm_fields(entry))
+                                                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/folders/2y/xs2wql_1125649wng0_95hzh0000gr/T/ipykernel_23689/2811287546.py", line 126, in composite_storm_fields
     raise RuntimeError(
-RuntimeError: HAFS has no storm-following guidance for ep152026 (ATCF id '15e') yet - - it isn't in NOMADS's active HAFS storm registry (hafs/prod/inphfsa listing) right now. This is normal for a storm that was just designated; it should appear once NHC/NOMADS register it.
+RuntimeError: No windows had usable HAFS data for ep152026 (all 0 window(s) skipped: [])
 
 -->
 </div>
