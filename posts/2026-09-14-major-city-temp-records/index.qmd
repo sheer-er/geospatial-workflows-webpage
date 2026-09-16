@@ -50,6 +50,7 @@ the page).
 #| label: setup
 #| output: false
 
+import logging
 import shutil
 import time
 import traceback
@@ -65,6 +66,21 @@ import cartopy.feature as cfeature
 
 import meteostat
 from meteostat import Point, Parameter, UnitSystem
+
+# Meteostat logs (via the stdlib logging module, not warnings.warn) every time
+# a single station-year file fails to load -- e.g. a transient SSL/network
+# hiccup fetching one year out of a station's multi-decade history -- as a
+# WARNING with a full traceback attached. It already handles this
+# gracefully on its own (that year's data is just dropped; the rest of the
+# fetch continues), so this is expected, recoverable noise, not something
+# worth surfacing. Nothing in this notebook configures a logging handler,
+# so Python's default "no handler configured" fallback was printing these
+# warnings straight to stderr, which Quarto then captures into the
+# rendered page. Raising the "meteostat" logger's threshold above WARNING
+# silences exactly this, without touching any of *our* own exception
+# handling (run_stage/failures) below, which still catches and reports
+# anything that actually prevents a city from resolving.
+logging.getLogger("meteostat").setLevel(logging.ERROR)
 
 # Meteostat blocks any single daily request spanning > 30 years by default
 # (it's a safety rail against accidentally downloading someone's entire
@@ -170,8 +186,14 @@ def classify_diff(diff_f, extreme_label):
     daily lows so this function never has to know which direction it's
     looking at. extreme_label names that direction for the top bucket,
     e.g. "Above" for highs or "Below" for lows.
+
+    The "new record" threshold is diff_f > TIED_BAND_F, not some separate
+    number -- it picks up exactly where the "tied" band leaves off, so
+    there's no dead zone between "tied" and "record" (an earlier version
+    used diff_f > 1 here while TIED_BAND_F was 0.5, leaving diff_f in
+    (0.5, 1] classified as neither).
     """
-    if diff_f > 1:
+    if diff_f > TIED_BAND_F:
         return f"{extreme_label} record"
     if -TIED_BAND_F <= diff_f <= TIED_BAND_F:
         return "At record (tied)"
@@ -191,27 +213,27 @@ def classify_diff(diff_f, extreme_label):
 # from the cold record, i.e. a relatively mild month -- see "Why this color
 # ladder" in the caveats.
 MONTH_TIERS = [
-    ("#67000d", "3+ days set a new record (>1°F over)"),
-    ("#de2d26", "1-2 days set a new record (>1°F over)"),
+    ("#67000d", "3+ days set a new record (>0.5°F over)"),
+    ("#de2d26", "1-2 days set a new record (>0.5°F over)"),
     ("#fc9272", "3+ days tied the record (±0.5°F)"),
     ("#fcbba1", "1-2 days tied the record (±0.5°F)"),
     ("#fee0d2", "3+ days within 3°F of record"),
     ("#969696", "1-2 days within 3°F of record"),
     ("#6baed6", "3+ days within 10°F of record"),
     ("#2171b5", "At least 1 day within 10°F of record"),
-    ("#08306b", "Not close all month (< 3 days within 20°F)"),
+    ("#08306b", "Not close all month (<3 days within 20°F)"),
 ]
 
 MONTH_TIERS_MIN = [
-    ("#08306b", "3+ days set a new record low (>1°F under)"),
-    ("#2171b5", "1-2 days set a new record low (>1°F under)"),
+    ("#08306b", "3+ days set a new record low (>0.5°F under)"),
+    ("#2171b5", "1-2 days set a new record low (>0.5°F under)"),
     ("#6baed6", "3+ days tied the record low (±0.5°F)"),
     ("#9ecae1", "1-2 days tied the record low (±0.5°F)"),
     ("#c6dbef", "3+ days within 3°F of record low"),
     ("#969696", "1-2 days within 3°F of record low"),
     ("#fee0d2", "3+ days within 10°F of record low"),
     ("#fc9272", "At least 1 day within 10°F of record low"),
-    ("#67000d", "Not close all month (< 3 days within 20°F of record low)"),
+    ("#67000d", "Not close all month (<3 days within 20°F of record low)"),
 ]
 
 
@@ -615,7 +637,7 @@ city_meta = {f"{name}, {state}": (state, lat, lon) for name, state, lat, lon in 
 monthly_rows = []
 for label, group in month_slice.groupby("City"):
     counts = {
-        "days_above": int((group["diff_f"] > 1).sum()),
+        "days_above": int((group["diff_f"] > TIED_BAND_F).sum()),
         "days_tied": int(((group["diff_f"] >= -TIED_BAND_F) & (group["diff_f"] <= TIED_BAND_F)).sum()),
         "days_within_3": int((group["diff_f"] >= -3).sum()),
         "days_within_10": int((group["diff_f"] >= -10).sum()),
@@ -785,7 +807,7 @@ month_slice_min = daily_tally_df_min[
 monthly_rows_min = []
 for label, group in month_slice_min.groupby("City"):
     counts = {
-        "days_above": int((group["diff_f"] > 1).sum()),
+        "days_above": int((group["diff_f"] > TIED_BAND_F).sum()),
         "days_tied": int(((group["diff_f"] >= -TIED_BAND_F) & (group["diff_f"] <= TIED_BAND_F)).sum()),
         "days_within_3": int((group["diff_f"] >= -3).sum()),
         "days_within_10": int((group["diff_f"] >= -10).sum()),
@@ -931,6 +953,13 @@ for label, tb in failures:
   2°F-wide window, not the 1°F-wide "within a degree" that was actually
   intended. `TIED_BAND_F = 0.5` fixes this: "at record (tied)" now means
   `-0.5 <= diff_f <= 0.5`, a 1°F-wide band centered on the record.
+- **"Sets a new record" means more than 0.5°F over, not more than 1°F.**
+  This threshold should pick up exactly where the tied band leaves off —
+  it was briefly left at the old `diff_f > 1` while `TIED_BAND_F` had
+  already been tightened to 0.5, which left `diff_f` in `(0.5, 1]`
+  classified as neither tied nor record-setting. `classify_diff()` now
+  checks `diff_f > TIED_BAND_F` instead of a separately hardcoded 1, so
+  the two bands share one boundary with nothing falling between them.
 - **Why this color ladder (and why it's not literally the first draft)**:
   it went through a few rounds. The very first version had two buckets
   defined identically ("< 3 days within 3°F" listed twice). The settled
@@ -963,6 +992,17 @@ for label, tb in failures:
   HTML comment in the page source, rather than taking down the whole page.
   Flip it to `True` temporarily to get a full traceback while debugging a
   specific city.
+- **Meteostat's own per-station-year load failures are logged, not
+  printed to the page.** A transient network hiccup fetching one year out
+  of a station's multi-decade history is something Meteostat already
+  handles gracefully on its own (that year is just dropped; the rest of
+  the fetch continues) -- but by default it does so via a stdlib
+  `logging.warning(..., exc_info=True)` call that, with no handler
+  configured anywhere in this notebook, printed a full traceback straight
+  into the rendered page's output. `logging.getLogger("meteostat").setLevel(logging.ERROR)`
+  in the setup cell raises Meteostat's own log threshold so that noise
+  doesn't surface, without touching this page's own failure reporting
+  (`run_stage`/`failures`) below.
 - **Large-request guard disabled on purpose**: Meteostat blocks any single
   daily-data request spanning more than 30 years by default. That's turned
   off here (`meteostat.config.block_large_requests = False`) deliberately,
