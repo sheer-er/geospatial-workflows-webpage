@@ -65,6 +65,7 @@ from concurrent.futures import ThreadPoolExecutor
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import cartopy
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 
@@ -178,7 +179,7 @@ CITIES = [
     ("Quebec City", "QC", 46.8139, -71.2080, "QUE"), ("Halifax", "NS", 44.6488, -63.5752, "HFX"),
     ("Saskatoon", "SK", 52.1332, -106.6700, "SKT"),
     ("Moncton", "NB", 46.0878, -64.7782, "MCT"), ("St. John's", "NL", 47.5615, -52.7126, "STJ"),
-    ("Charlottetown", "PE", 46.2382, -63.1311, "CHT"),
+    ("Kelowna", "BC", 49.8880, -119.4960, "KEL"),
     # --- Mexico: most populous cities plus a few well-known tourist/
     # regional cities added directly; Tijuana and Puebla removed ---
     ("Mexico City", "MX", 19.4326, -99.1332, "MEX"),
@@ -350,46 +351,126 @@ def run_stage(label, fn):
         return None
 
 
-# Main map clip: 1 degree beyond four named reference cities in each
-# direction (Edmonton north, San Francisco west, St. John's NL east,
-# Puebla MX south -- "Pueblo" as given was almost certainly Puebla, the
-# only spelling that appears anywhere else in this file/list; a literal
-# Pueblo, CO reading would cut off all of Mexico, which contradicts
-# several Mexican cities being added in the same request). Puebla itself
-# was removed from CITIES in this same round, so this is a fixed number
-# now, not a live lookup -- and one consequence worth flagging: Oaxaca
-# (~17.1°N), added in this same round, sits just *south* of this southern
-# clip line and will not actually be visible on the main map as a result
-# (it's still in CITIES, still resolved and tallied, just not inside this
-# particular view).
-MAIN_EXTENT = [-123.4194, -51.7126, 18.0414, 54.5461]
+# Main map clip. Originally set to exactly 1 degree beyond four named
+# reference cities (Edmonton north, San Francisco west, St. John's NL
+# east, Puebla south), which correctly but literally cut off Oaxaca
+# (~17.1°N, added in the same round as that clip rule) since it sits just
+# south of that line. Revised here on request: south bound lowered to
+# include Oaxaca with a bit of margin, and west bound pushed out well past
+# San Francisco to open up more visible Pacific Ocean for the Alaska/
+# Hawaii insets below (which were feeling cramped hugging the coastline).
+# Oaxaca is still in CITIES and still fully resolved/tallied regardless of
+# this line -- it only ever affects what's visible on this specific map.
+MAIN_EXTENT = [-131.0, -51.7126, 16.0, 54.5461]
 
 # Alaska (Anchorage, Fairbanks) and Hawaii (Honolulu) sit far outside
 # MAIN_EXTENT -- rather than silently dropping them, both maps below give
 # each its own small inset, positioned to sit within the Pacific Ocean
-# portion of the main map itself (bottom-left: west of Mexico/California)
-# rather than as a separate panel outside the map's frame. Both are
-# zoomed in tight -- Oahu only for Hawaii, the Anchorage/Fairbanks
-# corridor for Alaska -- rather than the full state/island chain, and
-# labeled with just the state/territory name at the top instead of
-# per-city codes, since there isn't room for both a recognizable shape
-# and readable per-city labels at this size. Alaska specifically uses its
-# own Lambert Conformal projection (not the plain lon/lat grid PlateCarree
-# uses) centered on Alaska -- PlateCarree visibly stretches high-latitude
-# land east-west since it doesn't account for longitude lines converging
-# toward the pole, which was making Alaska look wider than it really is.
+# portion of the main map itself (bottom-left, using the extra ocean space
+# opened up by MAIN_EXTENT's western edge above) rather than as a
+# separate panel outside the map's frame. Stacked directly on top of each
+# other (Alaska above Hawaii) with a visible border around each, so they
+# read as distinct panels rather than blending into the ocean entirely.
+# Each shows the full state/island chain (not just a tight crop around its
+# cities) -- Alaska's own extent stops at -180° rather than continuing
+# across the antimeridian to the westernmost Aleutians, which would need
+# real dateline-wraparound handling; this still captures the mainland,
+# panhandle, and the large majority of the Aleutian chain by area and
+# population. Both are labeled with the state/territory name at the top
+# *and* each city with its own code, same as the main map. Alaska
+# specifically uses its own Lambert Conformal projection (not the plain
+# lon/lat grid PlateCarree uses) centered on Alaska -- PlateCarree
+# visibly stretches high-latitude land east-west since it doesn't account
+# for longitude lines converging toward the pole, which was making Alaska
+# look wider than it really is; Cartopy's GeoAxes also never distorts a
+# projection's true proportions to force-fit a panel's box shape (it
+# letterboxes instead), so mismatched box vs. content aspect ratios show
+# up as extra blank space around the map, not as a stretched result.
 INSET_SPECS = [
     {
-        "name": "Alaska", "rect": [0.010, 0.185, 0.145, 0.205],
-        "extent": [-155, -140, 58, 66],
-        "projection": ccrs.LambertConformal(central_longitude=-147.5, central_latitude=62),
+        "name": "Alaska", "rect": [0.015, 0.40, 0.20, 0.18],
+        "extent": [-180, -130, 51, 72],
+        "projection": ccrs.LambertConformal(central_longitude=-155, central_latitude=62),
     },
     {
-        "name": "Hawaii", "rect": [0.160, 0.185, 0.085, 0.205],
-        "extent": [-158.35, -157.6, 21.2, 21.8],
+        "name": "Hawaii", "rect": [0.015, 0.22, 0.20, 0.18],
+        "extent": [-160.5, -154.5, 18.8, 22.5],
         "projection": ccrs.PlateCarree(),
     },
 ]
+
+
+# Köppen-Geiger climate classification, for the reference map in section 9.
+# Data: Beck, H.E., N.E. Zimmermann, T.R. McVicar, N. Vergopolan, A. Berg,
+# E.F. Wood (2018): "Present and future Köppen-Geiger climate
+# classification maps at 1-km resolution," Scientific Data 5:180214,
+# https://doi.org/10.1038/sdata.2018.214 -- CC BY 4.0. Class codes and
+# official RGB colors are exactly as published in that dataset's own
+# legend.txt, not something invented for this page.
+#
+# The bundled file is a pre-cropped, pre-downsampled derivative, not the
+# original download: the authors' own archive (fetched once, offline, to
+# produce this file -- not at render time) ships the present-day
+# classification at three resolutions, and koppen_na.npz here is their
+# 5-arcmin ("0p083") grid cropped to North America (lon -180 to -50, lat
+# 14 to 72) and gzip-compressed -- 45 KB, vs. the field's own coarsest
+# full-globe file at roughly 10x that. Small enough to commit directly
+# rather than fetching an external file at render time (this repo's own
+# convention is normally the opposite -- see the README -- but a
+# few-hundred-KB static classification grid is a different scale of
+# problem than the multi-GB weather-model output other posts here
+# legitimately fetch fresh each run).
+KOPPEN_DATA_PATH = Path("data") / "koppen_na.npz"
+KOPPEN_COLORS = {
+    1: ("Af", "#0000FF"), 2: ("Am", "#0078FF"), 3: ("Aw", "#46AAFA"),
+    4: ("BWh", "#FF0000"), 5: ("BWk", "#FF9696"), 6: ("BSh", "#F5A500"), 7: ("BSk", "#FFDC64"),
+    8: ("Csa", "#FFFF00"), 9: ("Csb", "#C8C800"), 10: ("Csc", "#969600"),
+    11: ("Cwa", "#96FF96"), 12: ("Cwb", "#64C864"), 13: ("Cwc", "#329632"),
+    14: ("Cfa", "#C8FF50"), 15: ("Cfb", "#64FF50"), 16: ("Cfc", "#32C800"),
+    17: ("Dsa", "#FF00FF"), 18: ("Dsb", "#C800C8"), 19: ("Dsc", "#963296"), 20: ("Dsd", "#966496"),
+    21: ("Dwa", "#AAAFFF"), 22: ("Dwb", "#5A78DC"), 23: ("Dwc", "#4B50B4"), 24: ("Dwd", "#320087"),
+    25: ("Dfa", "#00FFFF"), 26: ("Dfb", "#37C8FF"), 27: ("Dfc", "#007D7D"), 28: ("Dfd", "#00465F"),
+    29: ("ET", "#B2B2B2"), 30: ("EF", "#666666"),
+}
+KOPPEN_GROUP_NAMES = {
+    "A": "Tropical", "B": "Arid", "C": "Temperate", "D": "Continental (\"Cold\")", "E": "Polar",
+}
+
+
+def load_koppen_layer():
+    """
+    Returns (rgba_array, raw_class_codes, (left, right, bottom, top)).
+    Class 0 (ocean / no classification, e.g. permanent ice sheets) is left
+    fully transparent in rgba so the topography layer underneath shows
+    through instead of a solid color standing in for "no data." The raw
+    codes are returned too so callers (the legend below) don't need to
+    re-open the file just to find out which classes are actually present.
+    """
+    npz = np.load(KOPPEN_DATA_PATH)
+    codes = npz["data"]
+    left, bottom, right, top = npz["bounds"]
+    rgba = np.zeros((*codes.shape, 4), dtype=np.uint8)
+    for code, (_, hex_color) in KOPPEN_COLORS.items():
+        r, g, b = (int(hex_color[i:i + 2], 16) for i in (1, 3, 5))
+        rgba[codes == code] = (r, g, b, 255)
+    return rgba, codes, (left, right, bottom, top)
+
+
+def add_topography_underlay(axis, alpha=0.2):
+    """
+    A muted grayscale backdrop for the climate-zone map: Cartopy's own
+    bundled Natural Earth shaded-relief raster (the same image
+    ax.stock_img() uses), converted to grayscale and drawn at low opacity
+    so it reads as subtle topographic texture rather than competing with
+    the climate-zone colors on top of it. stock_img() itself doesn't
+    expose grayscale conversion, hence loading the same file directly.
+    """
+    topo_path = (cartopy.config["repo_data_dir"] / "raster" / "natural_earth"
+                 / "50-natural-earth-1-downsampled.png")
+    topo_img = plt.imread(topo_path)
+    gray = topo_img[..., :3].mean(axis=-1)
+    axis.imshow(gray, cmap="gray", origin="upper", transform=ccrs.PlateCarree(),
+                extent=[-180, 180, -90, 90], alpha=alpha, zorder=0)
 
 
 def in_any_inset(df):
@@ -463,12 +544,14 @@ def draw_insets(fig, df, basemap_fn=add_basemap, marker_color=None, s=70):
         inset_ax.set_extent(spec["extent"], crs=ccrs.PlateCarree())
         basemap_fn(inset_ax)
         if not sub.empty:
-            plot_cities(inset_ax, sub, show_labels=False, marker_color=marker_color, s=s)
+            plot_cities(inset_ax, sub, show_labels=True, marker_color=marker_color, s=s)
         inset_ax.text(0.5, 0.95, spec["name"], transform=inset_ax.transAxes, ha="center", va="top",
                        fontsize=7, fontweight="bold", zorder=10,
                        bbox=dict(boxstyle="round,pad=0.15", fc="white", ec="none", alpha=0.75))
         for spine in inset_ax.spines.values():
-            spine.set_visible(False)
+            spine.set_visible(True)
+            spine.set_edgecolor("#333333")
+            spine.set_linewidth(1.0)
 
 
 def render_temp_map(df, tiers, plot_title, output_path):
@@ -537,9 +620,31 @@ adding the low-temperature analysis below didn't require any extra fetching.
 ```{python}
 #| label: fetch-histories
 
+# Dev-only cache: while iterating on layout/rendering (not on the actual
+# station-resolution logic), re-fetching ~250-500 station histories from
+# Meteostat on every single test render was by far the slowest part of the
+# feedback loop. With USE_LOCAL_CACHE = True, a station already fetched
+# once this "session" is loaded from a local pickle instead of re-hit over
+# the network -- CACHE_DIR is gitignored and never committed, so this
+# changes nothing about what actually ships. MUST be False (the default)
+# for the real render that gets pushed, since the cache doesn't know when
+# a new month's data becomes available -- it would happily keep serving
+# last month's fetch forever otherwise.
+USE_LOCAL_CACHE = False
+CACHE_DIR = Path("cache_dev")
+if USE_LOCAL_CACHE:
+    CACHE_DIR.mkdir(exist_ok=True)
+
+
 def fetch_station_daily(station_id):
+    cache_path = CACHE_DIR / f"{station_id}.pkl"
+    if USE_LOCAL_CACHE and cache_path.exists():
+        return pd.read_pickle(cache_path)
     ts = meteostat.daily(station_id, HIST_START, FETCH_END, parameters=[Parameter.TMAX, Parameter.TMIN])
-    return ts.fetch(units=UnitSystem.IMPERIAL)
+    df = ts.fetch(units=UnitSystem.IMPERIAL)
+    if USE_LOCAL_CACHE and df is not None:
+        df.to_pickle(cache_path)
+    return df
 
 
 # Fetch every candidate for every city (not just the nearest one) so the
@@ -1041,30 +1146,35 @@ render_temp_map(
 print(f'<img src="{image_path_min.as_posix()}?v={RUN_TOKEN}" style="max-width:100%;" />')
 ```
 
-## 9. Where every city sits
+## 9. Where every city sits, by climate zone
 
 A plain reference map -- every city's location as a black dot labeled with
-its code, no temperature data involved, against a general-purpose terrain
-background for geographic context.
+its code, no temperature data involved -- against a real Köppen-Geiger
+climate classification (Beck et al. 2018; see the caveats for the exact
+citation and how this page's copy of that data was prepared) as the main
+layer, with a muted grayscale topography backdrop underneath for
+geographic context rather than as the focus.
 
 ```{python}
 #| label: render-reference-map
 #| warning: false
 
-def add_terrain_basemap(axis):
-    """Like add_basemap(), but with Cartopy's bundled hypsometric-tint +
-    shaded-relief raster underneath instead of a flat land color -- see
-    the caveats for why this is real elevation shading but not a genuine
-    climate-zone classification."""
-    axis.stock_img()
+_koppen_rgba, _koppen_codes, _koppen_bounds = load_koppen_layer()
+
+
+def add_climate_basemap(axis):
+    add_topography_underlay(axis, alpha=0.2)
+    left, right, bottom, top = _koppen_bounds
+    axis.imshow(_koppen_rgba, origin="upper", extent=[left, right, bottom, top],
+                transform=ccrs.PlateCarree(), zorder=1, interpolation="nearest")
     axis.add_feature(cfeature.NaturalEarthFeature(
-        "physical", "coastline", "50m", edgecolor="#333333", facecolor="none"), linewidth=0.8, zorder=1)
+        "physical", "coastline", "50m", edgecolor="#333333", facecolor="none"), linewidth=0.8, zorder=2)
     axis.add_feature(cfeature.NaturalEarthFeature(
-        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="#555555", facecolor="none"),
-        linewidth=0.7, zorder=1)
+        "cultural", "admin_0_boundary_lines_land", "50m", edgecolor="#333333", facecolor="none"),
+        linewidth=0.7, zorder=2)
     axis.add_feature(cfeature.NaturalEarthFeature(
-        "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#777777", facecolor="none"),
-        linewidth=0.4, zorder=1)
+        "cultural", "admin_1_states_provinces_lakes", "50m", edgecolor="#555555", facecolor="none"),
+        linewidth=0.4, zorder=2)
 
 
 reference_df = pd.DataFrame([
@@ -1072,15 +1182,32 @@ reference_df = pd.DataFrame([
     for name, state, lat, lon, code in CITIES
 ])
 
-fig = plt.figure(figsize=(13, 9))
+fig = plt.figure(figsize=(13, 9.5))
 proj = ccrs.LambertConformal(central_longitude=-88, central_latitude=36)
-ax = fig.add_axes([0.005, 0.02, 0.99, 0.94], projection=proj)
+ax = fig.add_axes([0.005, 0.20, 0.99, 0.77], projection=proj)
 ax.set_extent(MAIN_EXTENT, crs=ccrs.PlateCarree())
-add_terrain_basemap(ax)
-plot_cities(ax, reference_df[in_main_extent(reference_df) & ~in_any_inset(reference_df)], marker_color="black", s=55)
-ax.set_title(f"All {len(CITIES)} cities tracked by this page", fontsize=13)
+add_climate_basemap(ax)
+plot_cities(ax, reference_df[in_main_extent(reference_df) & ~in_any_inset(reference_df)],
+            marker_color="black", s=55)
+ax.set_title(f"All {len(CITIES)} cities, by Köppen-Geiger climate zone", fontsize=13)
 
-draw_insets(fig, reference_df, basemap_fn=add_terrain_basemap, marker_color="black", s=55)
+draw_insets(fig, reference_df, basemap_fn=add_climate_basemap, marker_color="black", s=55)
+
+# Legend only for classes actually present in this cropped region -- North
+# America has ~26 of the classification's 30 global classes, so showing
+# all 30 (including ones like tropical rainforest that don't occur here)
+# would just be clutter.
+present_codes = sorted(c for c in np.unique(_koppen_codes) if c in KOPPEN_COLORS)
+
+legend_handles = [
+    plt.Line2D([0], [0], marker="s", linestyle="none", markerfacecolor=KOPPEN_COLORS[c][1],
+               markeredgecolor="#333333", markersize=9, label=f"{KOPPEN_COLORS[c][0]}")
+    for c in present_codes
+]
+fig.legend(handles=legend_handles, loc="lower center", bbox_to_anchor=(0.5, 0.0),
+           ncol=9, fontsize=7.5, framealpha=0.9,
+           title="Köppen-Geiger climate zone (grouped A=tropical, B=arid, C=temperate, D=continental, E=polar)",
+           title_fontsize=7.5)
 
 reference_map_path = IMAGE_DIR / "city-reference-map.png"
 fig.savefig(reference_map_path, format="png", dpi=150)
@@ -1120,21 +1247,22 @@ for label, tb in failures:
   Zapopan, and Guadalupe (Mexico City/Guadalajara/Monterrey suburbs in
   Mexico); and, on reflection, Tijuana's inclusion was reconsidered and it
   was dropped too — all excluded even though several individually outrank
-  cities that made the cut. The Canadian list also went through a second
-  pass: Hamilton, London, Kitchener, and Windsor were all removed, since
-  clustered together with Toronto and Ottawa they made that corner of the
-  map hard to read even though none of the four is really a suburb in the
-  Mississauga/Brampton sense. In their place: Victoria BC and four cities
-  chosen specifically to cover provinces that had zero representation
-  otherwise — Moncton NB, St. John's NL, and Charlottetown PE (the latter
-  notably smaller than everything else on the list, included anyway since
-  it's the only city of any size in Prince Edward Island and provincial
-  coverage was the explicit goal of this pass, not population). Gatineau,
-  QC was kept despite sitting right across the river from Ottawa, since it
-  has its own distinct government (a different province entirely) and
-  economy rather than functioning as a bedroom suburb. Ranking data for
-  Mexican cities specifically is less precise here than for the US/Canada
-  lists, so the exact cutoff toward the bottom of that list is approximate.
+  cities that made the cut. The Canadian list went through several more
+  passes after that: Hamilton, London, Kitchener, and Windsor were removed
+  since, clustered together with Toronto and Ottawa, they made that corner
+  of the map hard to read (even though none of the four is really a suburb
+  in the Mississauga/Brampton sense); Victoria BC, Moncton NB, and
+  St. John's NL were added specifically to cover provinces that had zero
+  representation otherwise; Gatineau QC was later removed too, once it
+  became clear it was rendering as a second, effectively overlapping point
+  right next to Ottawa at this map's scale (its own distinct provincial
+  government doesn't help if the dot is indistinguishable from its
+  neighbor's); and Charlottetown PE — added for the same provincial-
+  coverage reason as Victoria/Moncton/St. John's, despite being notably
+  smaller than everything else on the list — was itself later swapped for
+  Kelowna BC. Ranking data for Mexican cities specifically is less precise
+  here than for the US/Canada lists, so the exact cutoff toward the bottom
+  of that list is approximate.
 - **City codes.** Every city gets a short, unique 2-3 character code, used
   to label its point on the maps in sections 5 and 8. Most are 3
   characters, often that city's real IATA airport code (`ATL`, `PHX`,
@@ -1264,6 +1392,17 @@ for label, tb in failures:
   off here (`meteostat.config.block_large_requests = False`) deliberately,
   since computing an honest "record for this calendar day" requires each
   station's *entire* digitized history, not just the last 30 years.
+- **`USE_LOCAL_CACHE` must be `False` for any render that actually gets
+  published.** With ~250-500 station histories to fetch, re-hitting
+  Meteostat on every single test render while iterating on something
+  unrelated to the fetch itself (map layout, color choices, and similar)
+  was the slowest part of the feedback loop by far. Setting it to `True`
+  caches each station's fetch to `cache_dev/` (gitignored, never
+  committed) and reuses it on the next render instead of re-fetching —
+  but the cache has no concept of "this month's data wasn't available
+  yet last time I checked," so it will happily keep serving a stale
+  fetch indefinitely. Fine for iterating on this page's code; wrong for
+  the render that's meant to reflect an actual month's data.
 - **Station fetches run in parallel** (`ThreadPoolExecutor`, up to
   `{python} N_WORKERS` at once) since each is an independent network call to
   Meteostat's bulk data. Every candidate for every city is fetched (not just
@@ -1335,21 +1474,46 @@ for label, tb in failures:
   glance. The underlying `monthly_df` / `monthly_df_min` tables above each
   map list every city's code unambiguously if a label on the map itself is
   unclear.
-- **Section 9's background is real elevation-derived shading, but not a
-  genuine climate classification map.** `ax.stock_img()` draws Cartopy's
-  own bundled Natural Earth raster — an actual cross-blended hypsometric
-  tint + shaded relief image, not a placeholder — which is why it can be
-  used with no extra data fetching and no risk of an external climate
-  dataset going away or changing format on some future monthly render.
-  It gives a genuine, real terrain/vegetation-tinted picture of North
-  America, but it is **not** a true Köppen-Geiger climate zone
-  classification (the kind of map that shades regions by "humid
-  subtropical," "arid," "continental," etc.) — building one of those
-  properly needs an external climate dataset (e.g. Beck et al.'s published
-  Köppen-Geiger rasters), which wasn't added here to avoid depending on a
-  data source of unknown long-term stability for an automated monthly
-  render. Worth revisiting with a specific, confirmed-stable source if
-  genuine climate zones (rather than terrain shading) matter for this map.
+- **Section 9's climate-zone layer is real Köppen-Geiger classification
+  data, not a terrain-shading stand-in.** An earlier version of this page
+  used Cartopy's bundled Natural Earth shaded-relief raster
+  (`ax.stock_img()`) as a rough visual proxy and was explicit that it
+  was *not* a genuine climate classification. That's since been replaced
+  with the actual thing: Beck, H.E., N.E. Zimmermann, T.R. McVicar, N.
+  Vergopolan, A. Berg, E.F. Wood (2018), "Present and future Köppen-Geiger
+  climate classification maps at 1-km resolution," *Scientific Data*
+  5:180214, [doi:10.1038/sdata.2018.214](https://doi.org/10.1038/sdata.2018.214),
+  CC BY 4.0 — the standard modern reference for this classification, and
+  the same one most published Köppen maps (including the one linked when
+  this feature was requested) are ultimately built from. Class codes and
+  colors are exactly as published in the dataset's own `legend.txt`, not
+  invented for this page. The Natural Earth shaded-relief raster is still
+  present, but demoted to a muted, low-opacity (20%) grayscale backdrop
+  underneath the climate colors (`add_topography_underlay()`), rather than
+  the main layer — geographic/topographic context, not the focus.
+- **The Köppen data is bundled with the repo, not fetched at render
+  time — a deliberate exception to this site's usual practice** (see the
+  README, and how every other live-data post here fetches fresh each
+  run). The published dataset ships the present-day classification at
+  three resolutions; `koppen_na.npz` here is the 5-arcmin ("0p083") grid,
+  cropped once (offline, not at render time) to lon -180 to -50 / lat 14
+  to 72 and gzip-compressed to **45 KB**. That's a different scale of
+  problem than the multi-GB weather-model output other posts on this site
+  legitimately fetch fresh each run, and unlike a live external fetch, it
+  can't fail or change format out from under a future scheduled render —
+  worth it here since the classification itself doesn't change
+  month-to-month the way weather does.
+- **Alaska and Hawaii's insets show the (approximately) full
+  state/territory, not just a tight crop around their cities.** Alaska's
+  own extent stops at -180° rather than continuing across the
+  antimeridian to the westernmost Aleutian islands, which would need real
+  dateline-wraparound handling to render correctly — this still captures
+  the mainland, panhandle, and the large majority of the Aleutian chain by
+  both area and population. Cartopy's `GeoAxes` never distorts a
+  projection's true proportions to force-fit a panel's box shape (it
+  letterboxes — adds blank space — instead), so a mismatch between an
+  inset's box aspect ratio and its content's true aspect ratio shows up as
+  extra margin around the map, not as visible stretching.
 
 ## Keeping this page current
 

@@ -1,5 +1,6 @@
 /.quarto/
 **/*.quarto_ipynb*
 **/.DS_Store
+**/cache_dev/
 
 **/*.quarto_ipynb
