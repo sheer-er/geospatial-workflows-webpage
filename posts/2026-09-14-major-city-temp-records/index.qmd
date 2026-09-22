@@ -134,6 +134,14 @@ meteostat.config.block_large_requests = False
 # were also removed: neither has a station deep enough to plot (see the
 # depth check in resolve_city). Port-au-Prince was considered and rejected --
 # the only station within 120 km is Dominican, with 9 years of record.
+# Culiacan MX was then also dropped for the same shallow-station reason (its
+# one candidate had gaps covering 12 of August's 31 days) and replaced with
+# Hermosillo MX -- checked, along with every other major city in Sonora,
+# Chihuahua, Coahuila, Sinaloa, Durango, and Nuevo Leon, highest population
+# first, for the first one with a station clearing the depth check;
+# Hermosillo (pop. ~936k) was the very first candidate tried and passed
+# (53yr, 1949-2026, no gaps). Chihuahua city also passed but ranks lower by
+# population.
 CITIES = [
     # --- Most populous US cities (proxy for "most influential") ---
     ("New York", "NY", 40.7128, -74.0060, "NYC"), ("Los Angeles", "CA", 34.0522, -118.2437, "LA"),
@@ -195,7 +203,7 @@ CITIES = [
     ("Leon", "MX", 21.1250, -101.6860, "LEN"), ("Ciudad Juarez", "MX", 31.6904, -106.4245, "CJS"),
     ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
     ("Tampico", "MX", 22.2331, -97.8611, "TAM"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
-    ("Culiacan", "MX", 24.8091, -107.3940, "CUL"), ("Merida", "MX", 20.9674, -89.5926, "MID"),
+    ("Hermosillo", "MX", 29.0729, -110.9559, "HMO"), ("Merida", "MX", 20.9674, -89.5926, "MID"),
     ("Oaxaca", "MX", 17.0732, -96.7266, "OAX"),
     ("Puerto Vallarta", "MX", 20.6534, -105.2253, "PVR"),
     # --- Caribbean and Central America (state slot holds the country code) ---
@@ -1292,12 +1300,14 @@ for label, tb in failures:
   data and still be too gappy: each calendar day needs at least 15 earlier
   years behind it before it's compared against a record at all. Candidates
   where fewer than 80% of the target month's days clear that bar are
-  rejected up front. Monterrey and Cabo San Lucas were dropped from the list
-  for this reason (no candidate within 120 km cleared it). Several
-  border-city stations were also ruled out for a different reason: Mexican
-  cities like Matamoros and Reynosa only have 6-year local stations, so the
-  best-scoring station would be across the border in the US, under a Mexican
-  city's name.
+  rejected up front. Monterrey, Cabo San Lucas, and Culiacan were dropped
+  from the list for this reason (no candidate within 120 km cleared it).
+  Culiacan's replacement, Hermosillo, was chosen by checking every major
+  city in Sonora, Chihuahua, Coahuila, Sinaloa, Durango, and Nuevo Leon,
+  highest population first, until one passed. Several border-city stations
+  were also ruled out for a different reason: Mexican cities like Matamoros
+  and Reynosa only have 6-year local stations, so the best-scoring station
+  would be across the border in the US, under a Mexican city's name.
 - **Canada and Mexico additions, "ignoring suburbs."** Both lists rank by
   city-*proper* population (not metro), which is what makes "ignoring
   suburbs" a real judgment call rather than a simple cutoff: a strict
