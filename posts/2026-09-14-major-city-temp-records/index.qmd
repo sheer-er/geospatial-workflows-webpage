@@ -1,7 +1,8 @@
 ---
 title: "How Close Did Your City Come to a Temperature Record Last Month? Tracking ~100 Cities Across North America"
 description: >
-  Once a month, pulls each of ~100 major US, Canadian, and Mexican cities'
+  Once a month, pulls each of ~100 major US, Canadian, Mexican, Caribbean,
+  and Belizean cities'
   weather station, tallies how many days in the prior calendar month
   landed near, at, or beyond that station's all-time high (and separately,
   all-time low) for the day, and maps both -- plus a running multi-year
@@ -22,7 +23,7 @@ resources:
 Every time this page is rendered (once a month — see the note at the
 bottom), it:
 
-1. Takes a fixed list of **~100 cities** across the US, Canada, and Mexico
+1. Takes a fixed list of **~100 cities** across the US, Canada, Mexico, the Caribbean, and Belize
    (mostly by population, as a standard proxy for "most influential" — see
    the caveats section for the details and judgment calls involved).
 2. For each city, finds the **most complete nearby weather station** (the
@@ -126,6 +127,13 @@ meteostat.config.block_large_requests = False
 # this map's scale) removed and replaced 1-for-1 with Pittsburgh PA, Bend
 # OR, Oaxaca MX, Puerto Vallarta MX, and Cabo San Lucas MX; Colorado
 # Springs CO dropped last to hold the total at exactly 100.
+# Latest round (still exactly 100): added Havana, Santo Domingo, Kingston,
+# Nassau, Belize City, Tampico MX, and Kona HI; removed Austin (San Antonio
+# is 118 km away), Tampa (Orlando, 124 km), Des Moines (Omaha, 196 km),
+# Cheyenne (Denver, 156 km), and Knoxville TN. Cabo San Lucas and Monterrey
+# were also removed: neither has a station deep enough to plot (see the
+# depth check in resolve_city). Port-au-Prince was considered and rejected --
+# the only station within 120 km is Dominican, with 9 years of record.
 CITIES = [
     # --- Most populous US cities (proxy for "most influential") ---
     ("New York", "NY", 40.7128, -74.0060, "NYC"), ("Los Angeles", "CA", 34.0522, -118.2437, "LA"),
@@ -133,7 +141,7 @@ CITIES = [
     ("Phoenix", "AZ", 33.4484, -112.0740, "PHX"), ("Philadelphia", "PA", 39.9526, -75.1652, "PHL"),
     ("San Antonio", "TX", 29.4241, -98.4936, "SAT"), ("San Diego", "CA", 32.7157, -117.1611, "SAN"),
     ("Dallas", "TX", 32.7767, -96.7970, "DAL"), ("Jacksonville", "FL", 30.3322, -81.6557, "JAX"),
-    ("Austin", "TX", 30.2672, -97.7431, "AUS"), ("San Jose", "CA", 37.3382, -121.8863, "SJ"),
+    ("San Jose", "CA", 37.3382, -121.8863, "SJ"),
     ("Columbus", "OH", 39.9612, -82.9988, "COL"), ("Charlotte", "NC", 35.2271, -80.8431, "CLT"),
     ("Indianapolis", "IN", 39.7684, -86.1581, "IND"), ("San Francisco", "CA", 37.7749, -122.4194, "SF"),
     ("Seattle", "WA", 47.6062, -122.3321, "SEA"), ("Denver", "CO", 39.7392, -104.9903, "DEN"),
@@ -157,15 +165,16 @@ CITIES = [
     ("Rapid City", "SD", 44.0805, -103.2310, "RAP"), ("Fargo", "ND", 46.8772, -96.7898, "FAR"),
     ("Little Rock", "AR", 34.7465, -92.2896, "LIT"), ("Reno", "NV", 39.5296, -119.8138, "RNO"),
     ("Buffalo", "NY", 42.8864, -78.8784, "BUF"), ("Pittsburgh", "PA", 40.4406, -79.9959, "PIT"),
-    ("Knoxville", "TN", 35.9606, -83.9207, "KNX"), ("Charleston", "WV", 38.3498, -81.6326, "CHW"),
-    ("Tampa", "FL", 27.9506, -82.4572, "TPA"), ("Flagstaff", "AZ", 35.1983, -111.6513, "FLG"),
-    ("Cheyenne", "WY", 41.1400, -104.8202, "CHY"), ("Jackson", "WY", 43.4799, -110.7624, "JAC"),
+    ("Charleston", "WV", 38.3498, -81.6326, "CHW"),
+    ("Flagstaff", "AZ", 35.1983, -111.6513, "FLG"),
+    ("Jackson", "WY", 43.4799, -110.7624, "JAC"),
     ("Jackson", "MS", 32.2988, -90.1848, "JMS"), ("Mobile", "AL", 30.6954, -88.0399, "MOB"),
     ("Tallahassee", "FL", 30.4383, -84.2807, "TLH"), ("Orlando", "FL", 28.5383, -81.3792, "ORL"),
     ("Savannah", "GA", 32.0809, -81.0912, "SAV"), ("Charleston", "SC", 32.7765, -79.9311, "CHS"),
-    ("Des Moines", "IA", 41.5868, -93.6250, "DSM"), ("Spokane", "WA", 47.6588, -117.4260, "SPK"),
+    ("Spokane", "WA", 47.6588, -117.4260, "SPK"),
     ("Portland", "ME", 43.6591, -70.2568, "PME"), ("Burlington", "VT", 44.4759, -73.2121, "BTV"),
     ("Bend", "OR", 44.0582, -121.3153, "BEN"), ("Honolulu", "HI", 21.3069, -157.8583, "HNL"),
+    ("Kona", "HI", 19.6400, -155.9969, "KOA"),
     ("Anchorage", "AK", 61.2181, -149.9003, "ANC"), ("Fairbanks", "AK", 64.8378, -147.7164, "FAI"),
     ("San Juan", "PR", 18.4655, -66.1057, "SJU"),
     # --- Canada: 15 most populous cities (city-proper, non-suburb), with the
@@ -185,11 +194,22 @@ CITIES = [
     ("Mexico City", "MX", 19.4326, -99.1332, "MEX"),
     ("Leon", "MX", 21.1250, -101.6860, "LEN"), ("Ciudad Juarez", "MX", 31.6904, -106.4245, "CJS"),
     ("Guadalajara", "MX", 20.6597, -103.3496, "GDL"),
-    ("Monterrey", "MX", 25.6866, -100.3161, "MTY"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
+    ("Tampico", "MX", 22.2331, -97.8611, "TAM"), ("Mexicali", "MX", 32.6245, -115.4523, "MXL"),
     ("Culiacan", "MX", 24.8091, -107.3940, "CUL"), ("Merida", "MX", 20.9674, -89.5926, "MID"),
-    ("Cabo San Lucas", "MX", 22.8905, -109.9167, "CSL"), ("Oaxaca", "MX", 17.0732, -96.7266, "OAX"),
+    ("Oaxaca", "MX", 17.0732, -96.7266, "OAX"),
     ("Puerto Vallarta", "MX", 20.6534, -105.2253, "PVR"),
+    # --- Caribbean and Central America (state slot holds the country code) ---
+    ("Havana", "CU", 23.1136, -82.3666, "HAV"), ("Santo Domingo", "DR", 18.4861, -69.9312, "SDQ"),
+    ("Kingston", "JM", 17.9714, -76.7936, "KIN"), ("Nassau", "BS", 25.0478, -77.3554, "NAS"),
+    ("Belize City", "BZ", 17.4995, -88.1976, "BZE"),
 ]
+
+# Forces a city onto specific station(s), skipping the nearby() search. Needed
+# when the "most years of history" rule in resolve_city picks a poor fit:
+# Kona's own airport station (PHKO0, 21 yr) loses to Upolu Point, a windswept
+# headland ~68 km north with 39 yr of record but only ~400 days of data since
+# 2020, which would leave the running tally almost empty.
+STATION_OVERRIDES = {"Kona, HI": ["PHKO0"]}
 
 HIST_START = datetime(1885, 1, 1)   # predates nearly every US first-order station's digitized record
 STATION_SEARCH_RADIUS_M = 120_000   # 120 km -- wide enough to fall back to a long-running regional
@@ -599,8 +619,8 @@ def find_candidate_stations(lat, lon):
 city_candidates = {}
 for name, state, lat, lon, code in CITIES:
     label = f"{name}, {state}"
-    candidates = run_stage(f"{label} (station lookup)",
-                            lambda lat=lat, lon=lon: find_candidate_stations(lat, lon))
+    candidates = STATION_OVERRIDES.get(label) or run_stage(
+        f"{label} (station lookup)", lambda lat=lat, lon=lon: find_candidate_stations(lat, lon))
     city_candidates[label] = candidates or []
 
 station_lookup_summary = pd.DataFrame([
@@ -714,6 +734,28 @@ def resolve_city(label, candidates):
             continue
 
         tmin_series = df["tmin"].dropna() if "tmin" in df.columns else pd.Series(dtype=float)
+
+        # Years-with-any-data isn't enough: a station with gaps can pass
+        # MIN_RECORD_YEARS yet have fewer than MIN_PRIOR_SAMPLES earlier
+        # readings for each calendar day of the target month, and
+        # expanding_daily_comparison() would then drop every row -- the
+        # city would silently vanish from the maps instead of failing here
+        # (Monterrey: 25 yr of data, but only 8-11 earlier years per August day).
+        too_shallow = None
+        for name, series in (("high", tmax_series), ("low", tmin_series)):
+            if series.empty:
+                continue
+            earlier = series[series.index.year < TARGET_MONTH_END.year]
+            depth = earlier.groupby([earlier.index.month, earlier.index.day]).count()
+            deep_days = sum(depth.get((d.month, d.day), 0) >= MIN_PRIOR_SAMPLES for d in MONTH_DATES)
+            if deep_days / len(MONTH_DATES) < MIN_MONTH_COVERAGE:
+                too_shallow = (f"{station_id}: only {deep_days} of {len(MONTH_DATES)} {TARGET_MONTH_START:%B} "
+                               f"days have {MIN_PRIOR_SAMPLES}+ earlier years of {name}s")
+                break
+        if too_shallow:
+            reasons.append(too_shallow)
+            continue
+
         scored.append((n_years, station_id, tmax_series, tmin_series))
 
     if not scored:
@@ -1237,7 +1279,25 @@ for label, tb in failures:
   for broader geographic spread; a further 25 US cities (mostly state
   capitals and regionally notable cities named directly) were added,
   bringing the US total to 75; and Fairbanks AK and San Juan PR were added
-  after that.
+  after that. The latest round added Kona HI plus Havana, Santo Domingo,
+  Kingston, Nassau, and Belize City, and swapped out Austin, Tampa, Des
+  Moines, Cheyenne, and Knoxville, each of which sits within a couple
+  hundred kilometers of a city that stayed (San Antonio, Orlando, Omaha,
+  Denver). Kona is the shortest record on the page (21 years, from 2006), so
+  its "records" are far less extreme than a century-long station's would be,
+  and it is pinned to its airport station by hand rather than picked by the
+  usual most-years rule. Port-au-Prince was considered but has no usable
+  station nearby.
+- **Stations need depth, not just length.** A station can have 20+ years of
+  data and still be too gappy: each calendar day needs at least 15 earlier
+  years behind it before it's compared against a record at all. Candidates
+  where fewer than 80% of the target month's days clear that bar are
+  rejected up front. Monterrey and Cabo San Lucas were dropped from the list
+  for this reason (no candidate within 120 km cleared it). Several
+  border-city stations were also ruled out for a different reason: Mexican
+  cities like Matamoros and Reynosa only have 6-year local stations, so the
+  best-scoring station would be across the border in the US, under a Mexican
+  city's name.
 - **Canada and Mexico additions, "ignoring suburbs."** Both lists rank by
   city-*proper* population (not metro), which is what makes "ignoring
   suburbs" a real judgment call rather than a simple cutoff: a strict
