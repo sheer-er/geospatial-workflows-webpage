@@ -463,10 +463,11 @@ Important
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"No active storms in AL/EP/CP right now — nothing to plot today."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Found: Fay (NA) — advisory 017
-Found: Odalys (EP) — advisory 017
-Found: Polo (EP) — advisory 015a
-Found: Nolo (EP) — advisory 015a</code></pre>
+<pre><code>Found: Fay (NA) — advisory 021
+Found: Gonzalo (NA) — advisory 002a
+Found: Odalys (EP) — advisory 022
+Found: Polo (EP) — advisory 019
+Found: Nolo (EP) — advisory 019a</code></pre>
 </div>
 </div>
 </section>
@@ -615,24 +616,40 @@ Found: Nolo (EP) — advisory 015a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
-<td>Odalys (EP)</td>
-<td>2026-09-24 06Z</td>
-<td>9</td>
-<td>120</td>
-<td>Hurricane (Cat 1-2)</td>
+<td>Fay (NA)</td>
+<td>2026-09-25 06Z</td>
+<td>8</td>
+<td>96</td>
+<td>Tropical Storm</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">1</th>
+<td>Gonzalo (NA)</td>
+<td>2026-09-25 06Z</td>
+<td>9</td>
+<td>120</td>
+<td>Tropical Storm</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>Odalys (EP)</td>
+<td>2026-09-25 06Z</td>
+<td>9</td>
+<td>120</td>
+<td>Major Hurricane (Cat 3+)</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
 <td>Polo (EP)</td>
-<td>2026-09-24 06Z</td>
+<td>2026-09-25 06Z</td>
 <td>9</td>
 <td>120</td>
 <td>Major Hurricane (Cat 3+)</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
+<th data-quarto-table-cell-role="th">4</th>
 <td>Nolo (EP)</td>
-<td>2026-09-24 06Z</td>
+<td>2026-09-25 06Z</td>
 <td>9</td>
 <td>120</td>
 <td>Major Hurricane (Cat 3+)</td>
@@ -822,33 +839,76 @@ Found: Nolo (EP) — advisory 015a</code></pre>
 <span id="cb5-171"><a href="#cb5-171" aria-hidden="true" tabindex="-1"></a>composite_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;!-- ep162026 window 0h-12h (fxx 3-15): precip range [0.00,403.23] mm, wind range [2.12,40.08] m/s --&gt;
-&lt;!-- ep162026 window 12h-24h (fxx 15-27): precip range [0.00,649.26] mm, wind range [1.79,36.92] m/s --&gt;
-&lt;!-- ep162026 window 24h-36h (fxx 27-39): precip range [0.00,472.41] mm, wind range [1.99,31.87] m/s --&gt;
-&lt;!-- ep162026 window 36h-48h (fxx 39-51): precip range [0.00,983.73] mm, wind range [2.02,31.34] m/s --&gt;
-&lt;!-- ep162026 window 48h-60h (fxx 51-63): precip range [0.00,1771.98] mm, wind range [1.97,35.35] m/s --&gt;
-&lt;!-- ep162026 window 60h-72h (fxx 63-75): precip range [0.00,2115.95] mm, wind range [1.50,35.35] m/s --&gt;
-&lt;!-- ep162026 window 72h-96h (fxx 75-99): precip range [0.00,2274.00] mm, wind range [1.17,26.23] m/s --&gt;
-&lt;!-- ep162026 window 96h-120h (fxx 99-123): precip range [0.00,2344.37] mm, wind range [0.97,18.06] m/s --&gt;
-&lt;!-- ep162026 FINAL: precip total range [0.00,2319.22] mm (0.00 to 91.31 in) --&gt;
-&lt;!-- ep172026 window 0h-12h (fxx 6-18): precip range [0.00,839.37] mm, wind range [1.18,76.40] m/s --&gt;
-&lt;!-- ep172026 window 12h-24h (fxx 18-30): precip range [0.00,1303.98] mm, wind range [1.87,75.49] m/s --&gt;
-&lt;!-- ep172026 window 24h-36h (fxx 30-42): precip range [0.00,1489.81] mm, wind range [1.33,65.77] m/s --&gt;
-&lt;!-- ep172026 window 36h-48h (fxx 42-54): precip range [0.00,2160.28] mm, wind range [1.00,62.82] m/s --&gt;
-&lt;!-- ep172026 window 48h-60h (fxx 54-66): precip range [0.00,2944.11] mm, wind range [1.17,63.72] m/s --&gt;
-&lt;!-- ep172026 window 60h-72h (fxx 66-78): precip range [0.00,3207.30] mm, wind range [1.26,63.72] m/s --&gt;
-&lt;!-- ep172026 window 72h-96h (fxx 78-102): precip range [0.00,3416.42] mm, wind range [1.37,46.51] m/s --&gt;
-&lt;!-- ep172026 window 96h-120h (fxx 102-126): precip range [0.00,3366.91] mm, wind range [0.99,46.51] m/s --&gt;
-&lt;!-- ep172026 FINAL: precip total range [0.00,3546.90] mm (0.00 to 139.64 in) --&gt;
-&lt;!-- ep152026 window 0h-12h (fxx 6-18): precip range [0.00,384.19] mm, wind range [3.03,30.19] m/s --&gt;
-&lt;!-- ep152026 window 12h-24h (fxx 18-30): precip range [0.00,636.55] mm, wind range [2.78,35.25] m/s --&gt;
-&lt;!-- ep152026 window 24h-36h (fxx 30-42): precip range [0.00,653.50] mm, wind range [1.45,35.31] m/s --&gt;
-&lt;!-- ep152026 window 36h-48h (fxx 42-54): precip range [0.00,610.99] mm, wind range [1.61,49.75] m/s --&gt;
-&lt;!-- ep152026 window 48h-60h (fxx 54-66): precip range [0.00,874.53] mm, wind range [0.97,49.75] m/s --&gt;
-&lt;!-- ep152026 window 60h-72h (fxx 66-78): precip range [0.00,1432.00] mm, wind range [0.50,46.32] m/s --&gt;
-&lt;!-- ep152026 window 72h-96h (fxx 78-102): precip range [0.00,1905.12] mm, wind range [3.28,52.70] m/s --&gt;
-&lt;!-- ep152026 window 96h-120h (fxx 102-126): precip range [0.00,2846.42] mm, wind range [1.93,65.04] m/s --&gt;
-&lt;!-- ep152026 FINAL: precip total range [0.00,2900.42] mm (0.00 to 114.19 in) --&gt;</code></pre>
+<pre><code>&lt;!-- al062026 window 0h-12h (fxx 3-15): precip range [0.00,112.02] mm, wind range [0.93,27.03] m/s --&gt;
+&lt;!-- al062026 window 12h-24h (fxx 15-27): precip range [0.00,214.76] mm, wind range [1.36,25.20] m/s --&gt;
+&lt;!-- al062026 window 24h-36h (fxx 27-39): precip range [0.00,190.13] mm, wind range [0.97,25.20] m/s --&gt;
+&lt;!-- al062026 window 36h-48h (fxx 39-51): precip range [0.00,213.16] mm, wind range [0.65,22.14] m/s --&gt;
+&lt;!-- al062026 window 48h-60h (fxx 51-63): precip range [0.00,344.37] mm, wind range [0.47,22.14] m/s --&gt;
+&lt;!-- al062026 window 60h-72h (fxx 63-75): precip range [0.00,439.65] mm, wind range [0.48,30.33] m/s --&gt;
+&lt;!-- al062026 window 72h-96h (fxx 75-99): precip range [0.00,711.17] mm, wind range [1.20,30.33] m/s --&gt;
+&lt;!-- al062026 FINAL: precip total range [0.00,725.79] mm (0.00 to 28.57 in) --&gt;
+&lt;!-- al072026 window 0h-12h (fxx 6-18): precip range [0.00,854.73] mm, wind range [1.53,34.96] m/s --&gt;
+&lt;!-- al072026 window 12h-24h (fxx 18-30): precip range [0.00,1057.96] mm, wind range [1.06,34.96] m/s --&gt;
+&lt;!-- al072026 window 24h-36h (fxx 30-42): precip range [0.00,1105.18] mm, wind range [0.87,25.23] m/s --&gt;
+&lt;!-- al072026 window 36h-48h (fxx 42-54): precip range [0.00,1050.58] mm, wind range [0.83,18.82] m/s --&gt;
+&lt;!-- al072026 window 48h-60h (fxx 54-66): precip range [0.00,870.71] mm, wind range [0.86,18.82] m/s --&gt;
+&lt;!-- al072026 window 60h-72h (fxx 66-78): precip range [0.00,814.32] mm, wind range [1.07,16.85] m/s --&gt;
+&lt;!-- al072026 window 72h-96h (fxx 78-102): precip range [0.00,1130.31] mm, wind range [0.95,15.92] m/s --&gt;
+&lt;!-- al072026: skipped window 96h-120h (fxx 102-126): Traceback (most recent call last):
+  File "/tmp/ipykernel_2433/2811287546.py", line 91, in composite_storm_fields
+    precip_window = fetch_precip_window(fxx0, fxx1)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ipykernel_2433/2811287546.py", line 65, in fetch_precip_window
+    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
+                                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/share/miniconda/envs/geospatial-workflows/lib/python3.11/site-packages/herbie/core.py", line 1283, in xarray
+    local_file = self.get_localFilePath(search)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/share/miniconda/envs/geospatial-workflows/lib/python3.11/site-packages/herbie/core.py", line 667, in get_localFilePath
+    idx_df = self.inventory(search)
+             ^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/share/miniconda/envs/geospatial-workflows/lib/python3.11/site-packages/herbie/core.py", line 961, in inventory
+    df = self.index_as_dataframe
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/share/miniconda/envs/geospatial-workflows/lib/python3.11/functools.py", line 1001, in __get__
+    val = self.func(instance)
+          ^^^^^^^^^^^^^^^^^^^
+  File "/usr/share/miniconda/envs/geospatial-workflows/lib/python3.11/site-packages/herbie/core.py", line 738, in index_as_dataframe
+    raise ValueError(
+ValueError: 
+No index file was found for None
+Download the full file first (with `H.download()`).
+You will need to remake the Herbie object (H = `Herbie()`)
+or delete this cached property: `del H.index_as_dataframe()`
+ --&gt;
+&lt;!-- al072026 FINAL: precip total range [0.00,1057.96] mm (0.00 to 41.65 in) --&gt;
+&lt;!-- ep162026 window 0h-12h (fxx 6-18): precip range [0.00,427.05] mm, wind range [0.65,50.73] m/s --&gt;
+&lt;!-- ep162026 window 12h-24h (fxx 18-30): precip range [0.00,747.99] mm, wind range [3.14,36.01] m/s --&gt;
+&lt;!-- ep162026 window 24h-36h (fxx 30-42): precip range [0.00,1392.76] mm, wind range [1.21,36.01] m/s --&gt;
+&lt;!-- ep162026 window 36h-48h (fxx 42-54): precip range [0.00,1527.37] mm, wind range [1.21,33.21] m/s --&gt;
+&lt;!-- ep162026 window 48h-60h (fxx 54-66): precip range [0.00,1011.68] mm, wind range [1.78,25.80] m/s --&gt;
+&lt;!-- ep162026 window 60h-72h (fxx 66-78): precip range [0.00,1136.85] mm, wind range [1.01,21.72] m/s --&gt;
+&lt;!-- ep162026 window 72h-96h (fxx 78-102): precip range [0.00,1671.87] mm, wind range [1.52,16.83] m/s --&gt;
+&lt;!-- ep162026 window 96h-120h (fxx 102-126): precip range [0.00,1715.82] mm, wind range [0.71,18.66] m/s --&gt;
+&lt;!-- ep162026 FINAL: precip total range [0.00,1730.49] mm (0.00 to 68.13 in) --&gt;
+&lt;!-- ep172026 window 0h-12h (fxx 3-15): precip range [0.00,1162.31] mm, wind range [1.13,75.37] m/s --&gt;
+&lt;!-- ep172026 window 12h-24h (fxx 15-27): precip range [0.00,1930.18] mm, wind range [1.34,64.16] m/s --&gt;
+&lt;!-- ep172026 window 24h-36h (fxx 27-39): precip range [0.00,2829.90] mm, wind range [0.82,61.35] m/s --&gt;
+&lt;!-- ep172026 window 36h-48h (fxx 39-51): precip range [0.00,3665.50] mm, wind range [1.14,60.12] m/s --&gt;
+&lt;!-- ep172026 window 48h-60h (fxx 51-63): precip range [0.00,4162.06] mm, wind range [1.18,49.79] m/s --&gt;
+&lt;!-- ep172026 window 60h-72h (fxx 63-75): precip range [0.00,4550.86] mm, wind range [1.00,48.41] m/s --&gt;
+&lt;!-- ep172026 window 72h-96h (fxx 75-99): precip range [0.00,4760.44] mm, wind range [0.73,48.41] m/s --&gt;
+&lt;!-- ep172026 window 96h-120h (fxx 99-123): precip range [0.00,4906.36] mm, wind range [0.73,43.64] m/s --&gt;
+&lt;!-- ep172026 FINAL: precip total range [0.00,4719.38] mm (0.00 to 185.80 in) --&gt;
+&lt;!-- ep152026 window 0h-12h (fxx 6-18): precip range [0.00,520.64] mm, wind range [1.45,43.47] m/s --&gt;
+&lt;!-- ep152026 window 12h-24h (fxx 18-30): precip range [0.00,522.69] mm, wind range [3.36,43.47] m/s --&gt;
+&lt;!-- ep152026 window 24h-36h (fxx 30-42): precip range [0.00,976.00] mm, wind range [0.96,39.91] m/s --&gt;
+&lt;!-- ep152026 window 36h-48h (fxx 42-54): precip range [0.00,1301.52] mm, wind range [0.71,50.28] m/s --&gt;
+&lt;!-- ep152026 window 48h-60h (fxx 54-66): precip range [0.00,1807.91] mm, wind range [0.58,64.47] m/s --&gt;
+&lt;!-- ep152026 window 60h-72h (fxx 66-78): precip range [0.00,2388.89] mm, wind range [2.23,69.16] m/s --&gt;
+&lt;!-- ep152026 window 72h-96h (fxx 78-102): precip range [0.00,3615.02] mm, wind range [1.02,69.16] m/s --&gt;
+&lt;!-- ep152026 window 96h-120h (fxx 102-126): precip range [0.00,5399.86] mm, wind range [1.02,67.49] m/s --&gt;
+&lt;!-- ep152026 FINAL: precip total range [0.00,5452.76] mm (0.00 to 214.68 in) --&gt;</code></pre>
 </div>
 <div id="composite-fields" class="cell-output cell-output-display" data-execution_count="4">
 <div>
@@ -869,30 +929,48 @@ Found: Nolo (EP) — advisory 015a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
-<td>Odalys (EP)</td>
-<td>8</td>
+<td>Fay (NA)</td>
+<td>7</td>
 <td>0</td>
-<td>2319.2</td>
-<td>96.8</td>
-<td>40.1</td>
+<td>725.8</td>
+<td>22.8</td>
+<td>30.3</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">1</th>
-<td>Polo (EP)</td>
-<td>8</td>
-<td>0</td>
-<td>3546.9</td>
-<td>155.3</td>
-<td>76.4</td>
+<td>Gonzalo (NA)</td>
+<td>7</td>
+<td>1</td>
+<td>1058.0</td>
+<td>32.5</td>
+<td>35.0</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2</th>
+<td>Odalys (EP)</td>
+<td>8</td>
+<td>0</td>
+<td>1730.5</td>
+<td>84.1</td>
+<td>50.7</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>Polo (EP)</td>
+<td>8</td>
+<td>0</td>
+<td>4719.4</td>
+<td>110.7</td>
+<td>75.4</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
 <td>Nolo (EP)</td>
 <td>8</td>
 <td>0</td>
-<td>2900.4</td>
-<td>167.2</td>
-<td>65.0</td>
+<td>5452.8</td>
+<td>154.8</td>
+<td>69.2</td>
 </tr>
 </tbody>
 </table>
@@ -1081,16 +1159,26 @@ Found: Nolo (EP) — advisory 015a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
+<td>Fay (NA)</td>
+<td>storm_images/al062026.png</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>Gonzalo (NA)</td>
+<td>storm_images/al072026.png</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
 <td>Odalys (EP)</td>
 <td>storm_images/ep162026.png</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
+<th data-quarto-table-cell-role="th">3</th>
 <td>Polo (EP)</td>
 <td>storm_images/ep172026.png</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">2</th>
+<th data-quarto-table-cell-role="th">4</th>
 <td>Nolo (EP)</td>
 <td>storm_images/ep152026.png</td>
 </tr>
@@ -1145,16 +1233,22 @@ Found: Nolo (EP) — advisory 015a</code></pre>
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"&lt;!-- Skipped </span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="sc">{</span>tb<span class="sc">}</span><span class="ch">\n</span><span class="ss">--&gt;"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div style="margin-bottom:1em;">
-<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-ep162026" selected="">Odalys (EP)</option> <option value="storm-ep172026">Polo (EP)</option> <option value="storm-ep152026">Nolo (EP)</option> </select>
+<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-al062026" selected="">Fay (NA)</option> <option value="storm-al072026">Gonzalo (NA)</option> <option value="storm-ep162026">Odalys (EP)</option> <option value="storm-ep172026">Polo (EP)</option> <option value="storm-ep152026">Nolo (EP)</option> </select>
 </div>
-<div id="storm-ep162026" class="storm-panel" style="display:block;">
-<img src="storm_images/ep162026.png?v=1790251350" style="max-width:100%;">
+<div id="storm-al062026" class="storm-panel" style="display:block;">
+<img src="storm_images/al062026.png?v=1790337760" style="max-width:100%;">
+</div>
+<div id="storm-al072026" class="storm-panel" style="display:none;">
+<img src="storm_images/al072026.png?v=1790337760" style="max-width:100%;">
+</div>
+<div id="storm-ep162026" class="storm-panel" style="display:none;">
+<img src="storm_images/ep162026.png?v=1790337760" style="max-width:100%;">
 </div>
 <div id="storm-ep172026" class="storm-panel" style="display:none;">
-<img src="storm_images/ep172026.png?v=1790251350" style="max-width:100%;">
+<img src="storm_images/ep172026.png?v=1790337760" style="max-width:100%;">
 </div>
 <div id="storm-ep152026" class="storm-panel" style="display:none;">
-<img src="storm_images/ep152026.png?v=1790251350" style="max-width:100%;">
+<img src="storm_images/ep152026.png?v=1790337760" style="max-width:100%;">
 </div>
 <script>
 function showStormPanel(id) {
@@ -1163,19 +1257,6 @@ function showStormPanel(id) {
   });
 }
 </script>
-<!-- Skipped Fay (NA):
-Traceback (most recent call last):
-  File "/tmp/ipykernel_2414/1513769429.py", line 102, in run_stage
-    return fn()
-           ^^^^
-  File "/tmp/ipykernel_2414/3934054208.py", line 82, in <lambda>
-    result = run_stage(storm["dropdown_label"], lambda storm=storm: load_track(storm))
-                                                                    ^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2414/3934054208.py", line 69, in load_track
-    raise RuntimeError(
-RuntimeError: HAFS has no storm-following guidance for al062026 (ATCF id '06l') yet - - it isn't in NOMADS's active HAFS storm registry (hafs/prod/inphfsa listing) right now. This is normal for a storm that was just designated; it should appear once NHC/NOMADS register it.
-
--->
 </div>
 </section>
 <section id="method-notes-caveats" class="level2">
