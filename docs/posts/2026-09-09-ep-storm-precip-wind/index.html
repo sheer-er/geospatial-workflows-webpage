@@ -463,8 +463,7 @@ Important
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"No active storms in AL/EP/CP right now — nothing to plot today."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Found: Rachel (EP) — advisory 030
-Found: Nolo (EP) — advisory 056</code></pre>
+<pre><code>Found: Rachel (EP) — advisory 033</code></pre>
 </div>
 </div>
 </section>
@@ -614,18 +613,10 @@ Found: Nolo (EP) — advisory 056</code></pre>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
 <td>Rachel (EP)</td>
-<td>2026-10-04 12Z</td>
+<td>2026-10-05 06Z</td>
 <td>9</td>
 <td>120</td>
 <td>Hurricane (Cat 1-2)</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>Nolo (EP)</td>
-<td>2026-10-04 12Z</td>
-<td>9</td>
-<td>120</td>
-<td>Major Hurricane (Cat 3+)</td>
 </tr>
 </tbody>
 </table>
@@ -812,84 +803,15 @@ Found: Nolo (EP) — advisory 056</code></pre>
 <span id="cb5-171"><a href="#cb5-171" aria-hidden="true" tabindex="-1"></a>composite_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;!-- ep182026 window 0h-12h (fxx 3-15): precip range [0.00,249.92] mm, wind range [1.81,47.58] m/s --&gt;
-&lt;!-- ep182026 window 12h-24h (fxx 15-27): precip range [0.00,320.09] mm, wind range [1.19,33.77] m/s --&gt;
-&lt;!-- ep182026 window 24h-36h (fxx 27-39): precip range [0.00,417.63] mm, wind range [1.55,31.87] m/s --&gt;
-&lt;!-- ep182026 window 36h-48h (fxx 39-51): precip range [0.00,529.91] mm, wind range [1.55,31.66] m/s --&gt;
-&lt;!-- ep182026 window 48h-60h (fxx 51-63): precip range [0.00,736.85] mm, wind range [1.52,30.25] m/s --&gt;
-&lt;!-- ep182026 window 60h-72h (fxx 63-75): precip range [0.00,830.60] mm, wind range [0.41,30.00] m/s --&gt;
-&lt;!-- ep182026 window 72h-96h (fxx 75-99): precip range [0.00,924.50] mm, wind range [0.41,29.09] m/s --&gt;
-&lt;!-- ep182026 window 96h-120h (fxx 99-123): precip range [0.00,946.09] mm, wind range [0.70,25.33] m/s --&gt;
-&lt;!-- ep182026 FINAL: precip total range [0.00,950.17] mm (0.00 to 37.41 in) --&gt;
-&lt;!-- ep152026 window 0h-12h (fxx 3-15): precip range [0.00,247.84] mm, wind range [0.74,52.46] m/s --&gt;
-&lt;!-- ep152026 window 12h-24h (fxx 15-27): precip range [0.00,50.22] mm, wind range [4.95,21.25] m/s --&gt;
-&lt;!-- ep152026: skipped window 24h-36h (fxx 27-39): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [17.47,33.47], lon [-179.99,179.99])
- --&gt;
-&lt;!-- ep152026: skipped window 36h-48h (fxx 39-51): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [17.04,33.04], lon [157.89,177.89])
- --&gt;
-&lt;!-- ep152026: skipped window 48h-60h (fxx 51-63): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [17.01,33.01], lon [153.22,173.22])
- --&gt;
-&lt;!-- ep152026: skipped window 60h-72h (fxx 63-75): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [16.84,32.84], lon [148.88,168.88])
- --&gt;
-&lt;!-- ep152026: skipped window 72h-96h (fxx 75-99): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [16.70,32.70], lon [141.16,161.16])
- --&gt;
-&lt;!-- ep152026: skipped window 96h-120h (fxx 99-123): Traceback (most recent call last):
-  File "/tmp/ipykernel_2771/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2771/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60], lon [-225.00,-163.50]; native lat [15.96,31.96], lon [141.76,161.76])
- --&gt;
-&lt;!-- ep152026 FINAL: precip total range [0.00,247.84] mm (0.00 to 9.76 in) --&gt;</code></pre>
+<pre><code>&lt;!-- ep182026 window 0h-12h (fxx 3-15): precip range [0.00,178.60] mm, wind range [1.34,41.99] m/s --&gt;
+&lt;!-- ep182026 window 12h-24h (fxx 15-27): precip range [0.00,373.87] mm, wind range [2.89,36.64] m/s --&gt;
+&lt;!-- ep182026 window 24h-36h (fxx 27-39): precip range [0.00,449.95] mm, wind range [2.01,36.64] m/s --&gt;
+&lt;!-- ep182026 window 36h-48h (fxx 39-51): precip range [0.00,438.23] mm, wind range [2.01,26.73] m/s --&gt;
+&lt;!-- ep182026 window 48h-60h (fxx 51-63): precip range [0.00,468.06] mm, wind range [0.63,26.73] m/s --&gt;
+&lt;!-- ep182026 window 60h-72h (fxx 63-75): precip range [0.00,531.93] mm, wind range [0.54,28.22] m/s --&gt;
+&lt;!-- ep182026 window 72h-96h (fxx 75-99): precip range [0.00,706.06] mm, wind range [0.54,29.51] m/s --&gt;
+&lt;!-- ep182026 window 96h-120h (fxx 99-123): precip range [0.00,901.81] mm, wind range [1.10,29.51] m/s --&gt;
+&lt;!-- ep182026 FINAL: precip total range [0.00,1036.53] mm (0.00 to 40.81 in) --&gt;</code></pre>
 </div>
 <div id="composite-fields" class="cell-output cell-output-display" data-execution_count="4">
 <div>
@@ -913,18 +835,9 @@ RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60],
 <td>Rachel (EP)</td>
 <td>8</td>
 <td>0</td>
-<td>950.2</td>
-<td>105.3</td>
-<td>47.6</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>Nolo (EP)</td>
-<td>2</td>
-<td>6</td>
-<td>247.8</td>
-<td>4.5</td>
-<td>52.5</td>
+<td>1036.5</td>
+<td>84.7</td>
+<td>42.0</td>
 </tr>
 </tbody>
 </table>
@@ -1116,11 +1029,6 @@ RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60],
 <td>Rachel (EP)</td>
 <td>storm_images/ep182026.png</td>
 </tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
-<td>Nolo (EP)</td>
-<td>storm_images/ep152026.png</td>
-</tr>
 </tbody>
 </table>
 
@@ -1172,13 +1080,10 @@ RuntimeError: Regridding produced no valid data at all (target lat [8.80,43.60],
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"&lt;!-- Skipped </span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="sc">{</span>tb<span class="sc">}</span><span class="ch">\n</span><span class="ss">--&gt;"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div style="margin-bottom:1em;">
-<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-ep182026" selected="">Rachel (EP)</option> <option value="storm-ep152026">Nolo (EP)</option> </select>
+<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-ep182026" selected="">Rachel (EP)</option> </select>
 </div>
 <div id="storm-ep182026" class="storm-panel" style="display:block;">
-<img src="storm_images/ep182026.png?v=1791137438" style="max-width:100%;">
-</div>
-<div id="storm-ep152026" class="storm-panel" style="display:none;">
-<img src="storm_images/ep152026.png?v=1791137438" style="max-width:100%;">
+<img src="storm_images/ep182026.png?v=1791201938" style="max-width:100%;">
 </div>
 <script>
 function showStormPanel(id) {
