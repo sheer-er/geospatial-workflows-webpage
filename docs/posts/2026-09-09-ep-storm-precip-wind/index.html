@@ -463,8 +463,8 @@ Important
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"No active storms in AL/EP/CP right now — nothing to plot today."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Found: Twenty-One-E (EP) — advisory 001
-Found: Simon (EP) — advisory 025a</code></pre>
+<pre><code>Found: Trudy (EP) — advisory 005
+Found: Simon (EP) — advisory 029</code></pre>
 </div>
 </div>
 </section>
@@ -613,8 +613,16 @@ Found: Simon (EP) — advisory 025a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
+<td>Trudy (EP)</td>
+<td>2026-10-14 06Z</td>
+<td>9</td>
+<td>120</td>
+<td>Major Hurricane (Cat 3+)</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
 <td>Simon (EP)</td>
-<td>2026-10-13 12Z</td>
+<td>2026-10-14 06Z</td>
 <td>9</td>
 <td>120</td>
 <td>Hurricane (Cat 1-2)</td>
@@ -804,15 +812,24 @@ Found: Simon (EP) — advisory 025a</code></pre>
 <span id="cb5-171"><a href="#cb5-171" aria-hidden="true" tabindex="-1"></a>composite_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;!-- ep202026 window 0h-12h (fxx 6-18): precip range [0.00,669.03] mm, wind range [0.76,43.26] m/s --&gt;
-&lt;!-- ep202026 window 12h-24h (fxx 18-30): precip range [0.00,1202.09] mm, wind range [1.38,51.79] m/s --&gt;
-&lt;!-- ep202026 window 24h-36h (fxx 30-42): precip range [0.00,2104.62] mm, wind range [0.93,68.41] m/s --&gt;
-&lt;!-- ep202026 window 36h-48h (fxx 42-54): precip range [0.00,2738.79] mm, wind range [1.26,68.41] m/s --&gt;
-&lt;!-- ep202026 window 48h-60h (fxx 54-66): precip range [0.00,3288.53] mm, wind range [0.73,63.65] m/s --&gt;
-&lt;!-- ep202026 window 60h-72h (fxx 66-78): precip range [0.00,2555.77] mm, wind range [0.74,55.57] m/s --&gt;
-&lt;!-- ep202026 window 72h-96h (fxx 78-102): precip range [0.00,3417.93] mm, wind range [0.68,39.11] m/s --&gt;
-&lt;!-- ep202026 window 96h-120h (fxx 102-126): precip range [0.00,3414.25] mm, wind range [0.78,24.41] m/s --&gt;
-&lt;!-- ep202026 FINAL: precip total range [0.00,3306.46] mm (0.00 to 130.18 in) --&gt;</code></pre>
+<pre><code>&lt;!-- ep212026 window 0h-12h (fxx 9-21): precip range [0.00,389.55] mm, wind range [0.83,27.39] m/s --&gt;
+&lt;!-- ep212026 window 12h-24h (fxx 21-33): precip range [0.00,509.71] mm, wind range [0.86,32.40] m/s --&gt;
+&lt;!-- ep212026 window 24h-36h (fxx 33-45): precip range [0.00,633.09] mm, wind range [0.65,32.40] m/s --&gt;
+&lt;!-- ep212026 window 36h-48h (fxx 45-57): precip range [0.00,1067.05] mm, wind range [1.07,37.68] m/s --&gt;
+&lt;!-- ep212026 window 48h-60h (fxx 57-69): precip range [0.00,1584.85] mm, wind range [1.32,56.10] m/s --&gt;
+&lt;!-- ep212026 window 60h-72h (fxx 69-81): precip range [0.00,2479.80] mm, wind range [0.97,56.10] m/s --&gt;
+&lt;!-- ep212026 window 72h-96h (fxx 81-105): precip range [0.00,4113.39] mm, wind range [0.61,53.37] m/s --&gt;
+&lt;!-- ep212026: skipped window 96h-120h (fxx 105-129): beyond HAFS max lead time --&gt;
+&lt;!-- ep212026 FINAL: precip total range [0.00,4149.21] mm (0.00 to 163.35 in) --&gt;
+&lt;!-- ep202026 window 0h-12h (fxx 9-21): precip range [0.00,731.83] mm, wind range [0.77,41.55] m/s --&gt;
+&lt;!-- ep202026 window 12h-24h (fxx 21-33): precip range [0.00,1065.49] mm, wind range [1.46,40.38] m/s --&gt;
+&lt;!-- ep202026 window 24h-36h (fxx 33-45): precip range [0.00,1708.84] mm, wind range [0.93,55.35] m/s --&gt;
+&lt;!-- ep202026 window 36h-48h (fxx 45-57): precip range [0.00,1889.96] mm, wind range [0.86,55.35] m/s --&gt;
+&lt;!-- ep202026 window 48h-60h (fxx 57-69): precip range [0.00,1897.14] mm, wind range [0.80,39.62] m/s --&gt;
+&lt;!-- ep202026 window 60h-72h (fxx 69-81): precip range [0.00,2310.66] mm, wind range [0.53,32.81] m/s --&gt;
+&lt;!-- ep202026 window 72h-96h (fxx 81-105): precip range [0.00,2949.01] mm, wind range [0.70,30.06] m/s --&gt;
+&lt;!-- ep202026: skipped window 96h-120h (fxx 105-129): beyond HAFS max lead time --&gt;
+&lt;!-- ep202026 FINAL: precip total range [0.00,2291.91] mm (0.00 to 90.23 in) --&gt;</code></pre>
 </div>
 <div id="composite-fields" class="cell-output cell-output-display" data-execution_count="4">
 <div>
@@ -833,12 +850,21 @@ Found: Simon (EP) — advisory 025a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
+<td>Trudy (EP)</td>
+<td>7</td>
+<td>1</td>
+<td>4149.2</td>
+<td>130.1</td>
+<td>56.1</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
 <td>Simon (EP)</td>
-<td>8</td>
-<td>0</td>
-<td>3306.5</td>
-<td>54.6</td>
-<td>68.4</td>
+<td>7</td>
+<td>1</td>
+<td>2291.9</td>
+<td>35.6</td>
+<td>55.3</td>
 </tr>
 </tbody>
 </table>
@@ -1027,6 +1053,11 @@ Found: Simon (EP) — advisory 025a</code></pre>
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
+<td>Trudy (EP)</td>
+<td>storm_images/ep212026.png</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
 <td>Simon (EP)</td>
 <td>storm_images/ep202026.png</td>
 </tr>
@@ -1081,10 +1112,13 @@ Found: Simon (EP) — advisory 025a</code></pre>
 <span id="cb10-37"><a href="#cb10-37" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"&lt;!-- Skipped </span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="sc">{</span>tb<span class="sc">}</span><span class="ch">\n</span><span class="ss">--&gt;"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div style="margin-bottom:1em;">
-<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-ep202026" selected="">Simon (EP)</option> </select>
+<label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-ep212026" selected="">Trudy (EP)</option> <option value="storm-ep202026">Simon (EP)</option> </select>
 </div>
-<div id="storm-ep202026" class="storm-panel" style="display:block;">
-<img src="storm_images/ep202026.png?v=1791916498" style="max-width:100%;">
+<div id="storm-ep212026" class="storm-panel" style="display:block;">
+<img src="storm_images/ep212026.png?v=1791993744" style="max-width:100%;">
+</div>
+<div id="storm-ep202026" class="storm-panel" style="display:none;">
+<img src="storm_images/ep202026.png?v=1791993744" style="max-width:100%;">
 </div>
 <script>
 function showStormPanel(id) {
@@ -1093,19 +1127,6 @@ function showStormPanel(id) {
   });
 }
 </script>
-<!-- Skipped Twenty-One-E (EP):
-Traceback (most recent call last):
-  File "/tmp/ipykernel_2724/1513769429.py", line 102, in run_stage
-    return fn()
-           ^^^^
-  File "/tmp/ipykernel_2724/3934054208.py", line 82, in <lambda>
-    result = run_stage(storm["dropdown_label"], lambda storm=storm: load_track(storm))
-                                                                    ^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2724/3934054208.py", line 69, in load_track
-    raise RuntimeError(
-RuntimeError: HAFS has no storm-following guidance for ep212026 (ATCF id '21e') yet - - it isn't in NOMADS's active HAFS storm registry (hafs/prod/inphfsa listing) right now. This is normal for a storm that was just designated; it should appear once NHC/NOMADS register it.
-
--->
 </div>
 </section>
 <section id="method-notes-caveats" class="level2">
