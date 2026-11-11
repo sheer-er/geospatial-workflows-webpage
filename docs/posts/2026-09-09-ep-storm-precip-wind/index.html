@@ -464,7 +464,7 @@ Important
 <span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="st">"No active storms in AL/EP/CP right now — nothing to plot today."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Found: Pena (CP) — advisory 016</code></pre>
+<pre><code>Found: Pena (CP) — advisory 020</code></pre>
 </div>
 </div>
 </section>
@@ -609,9 +609,9 @@ Important
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
 <td>Pena (CP)</td>
-<td>2026-11-10 12Z</td>
-<td>9</td>
-<td>120</td>
+<td>2026-11-11 12Z</td>
+<td>6</td>
+<td>60</td>
 <td>Tropical Storm</td>
 </tr>
 </tbody>
@@ -799,25 +799,12 @@ Important
 <span id="cb5-171"><a href="#cb5-171" aria-hidden="true" tabindex="-1"></a>composite_summary</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>&lt;!-- cp042026 window 0h-12h (fxx 3-15): precip range [0.00,278.17] mm, wind range [2.06,26.12] m/s --&gt;
-&lt;!-- cp042026 window 12h-24h (fxx 15-27): precip range [0.00,404.66] mm, wind range [0.86,23.05] m/s --&gt;
-&lt;!-- cp042026 window 24h-36h (fxx 27-39): precip range [0.00,513.07] mm, wind range [0.79,21.31] m/s --&gt;
-&lt;!-- cp042026 window 36h-48h (fxx 39-51): precip range [0.00,535.73] mm, wind range [0.68,20.56] m/s --&gt;
-&lt;!-- cp042026 window 48h-60h (fxx 51-63): precip range [0.00,605.45] mm, wind range [0.68,19.76] m/s --&gt;
-&lt;!-- cp042026 window 60h-72h (fxx 63-75): precip range [0.00,176.01] mm, wind range [1.80,19.76] m/s --&gt;
-&lt;!-- cp042026 window 72h-96h (fxx 75-99): precip range [0.00,204.64] mm, wind range [0.91,16.28] m/s --&gt;
-&lt;!-- cp042026: skipped window 96h-120h (fxx 99-123): Traceback (most recent call last):
-  File "/tmp/ipykernel_2979/2811287546.py", line 91, in composite_storm_fields
-    precip_window = fetch_precip_window(fxx0, fxx1)
-                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2979/2811287546.py", line 65, in fetch_precip_window
-    a1 = regrid_to_common(first_data_var(H1.xarray(f":APCP:surface:0-{fxx1} hour acc fcst")))
-         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/tmp/ipykernel_2979/2811287546.py", line 37, in regrid_to_common
-    raise RuntimeError(
-RuntimeError: Regridding produced no valid data at all (target lat [-4.40,27.90], lon [-204.20,-149.70]; native lat [1.47,17.47], lon [-179.98,180.00])
- --&gt;
-&lt;!-- cp042026 FINAL: precip total range [0.00,605.45] mm (0.00 to 23.84 in) --&gt;</code></pre>
+<pre><code>&lt;!-- cp042026 window 0h-12h (fxx 3-15): precip range [0.00,793.01] mm, wind range [1.20,34.11] m/s --&gt;
+&lt;!-- cp042026 window 12h-24h (fxx 15-27): precip range [0.00,1275.24] mm, wind range [0.59,21.20] m/s --&gt;
+&lt;!-- cp042026 window 24h-36h (fxx 27-39): precip range [0.00,1697.58] mm, wind range [0.83,20.77] m/s --&gt;
+&lt;!-- cp042026 window 36h-48h (fxx 39-51): precip range [0.00,1925.62] mm, wind range [0.99,22.62] m/s --&gt;
+&lt;!-- cp042026 window 48h-60h (fxx 51-63): precip range [0.00,209.00] mm, wind range [1.08,22.62] m/s --&gt;
+&lt;!-- cp042026 FINAL: precip total range [0.00,1925.62] mm (0.00 to 75.81 in) --&gt;</code></pre>
 </div>
 <div id="composite-fields" class="cell-output cell-output-display" data-execution_count="4">
 <div>
@@ -839,11 +826,11 @@ RuntimeError: Regridding produced no valid data at all (target lat [-4.40,27.90]
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
 <td>Pena (CP)</td>
-<td>7</td>
-<td>1</td>
-<td>605.5</td>
-<td>35.2</td>
-<td>26.1</td>
+<td>5</td>
+<td>0</td>
+<td>1925.6</td>
+<td>40.5</td>
+<td>34.1</td>
 </tr>
 </tbody>
 </table>
@@ -1089,7 +1076,7 @@ RuntimeError: Regridding produced no valid data at all (target lat [-4.40,27.90]
 <label for="storm-select"><strong>Select a storm:</strong></label> <select id="storm-select" onchange="showStormPanel(this.value)"> <option value="storm-cp042026" selected="">Pena (CP)</option> </select>
 </div>
 <div id="storm-cp042026" class="storm-panel" style="display:block;">
-<img src="storm_images/cp042026.png?v=1794337141" style="max-width:100%;">
+<img src="storm_images/cp042026.png?v=1794423389" style="max-width:100%;">
 </div>
 <script>
 function showStormPanel(id) {
