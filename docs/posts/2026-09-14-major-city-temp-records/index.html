@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.19">
+<meta name="generator" content="quarto-1.11.9">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -75,14 +75,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../../">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-bf27225e3a48a9273f3daa8f8e829971.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-63b5708e65d6cd79cd7618c58d0c21e7.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-55617497126496852ff9f5a59253c640.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../../site_libs/bootstrap/bootstrap-8d3ad9c781c51ccd60b292c95058b2c2.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -118,19 +119,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <link rel="stylesheet" href="../../styles.css">
 </head>
 
-<body class="nav-fixed quarto-light">
+<body class="nav-fixed quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark" aria-label="Site">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">Eric Shearer | Geospatial Vibe Coding</span>
     </a>
   </div>
-            <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -159,6 +159,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </div> <!-- /navcollapse -->
             <div class="quarto-navbar-tools">
 </div>
+            <div id="quarto-search" class="" title="Search"></div>
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -167,7 +168,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- sidebar -->
 <!-- margin-sidebar -->
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
     <h2 id="toc-title">On this page</h2>
    
   <ul>
@@ -178,10 +179,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul class="collapse">
   <li><a href="#spot-check-does-a-broken-record-actually-raise-the-bar" id="toc-spot-check-does-a-broken-record-actually-raise-the-bar" class="nav-link" data-scroll-target="#spot-check-does-a-broken-record-actually-raise-the-bar">Spot-check: does a broken record actually raise the bar?</a></li>
   </ul></li>
-  <li><a href="#last-months-results-daily-highs-september-2026" id="toc-last-months-results-daily-highs-september-2026" class="nav-link" data-scroll-target="#last-months-results-daily-highs-september-2026">4. Last month’s results, daily highs: September 2026</a></li>
+  <li><a href="#last-months-results-daily-highs-october-2026" id="toc-last-months-results-daily-highs-october-2026" class="nav-link" data-scroll-target="#last-months-results-daily-highs-october-2026">4. Last month’s results, daily highs: October 2026</a></li>
   <li><a href="#map-last-months-highs-against-each-citys-record" id="toc-map-last-months-highs-against-each-citys-record" class="nav-link" data-scroll-target="#map-last-months-highs-against-each-citys-record">5. Map last month’s highs against each city’s record</a></li>
   <li><a href="#back-calculated-running-tally-since-2020-daily-lows" id="toc-back-calculated-running-tally-since-2020-daily-lows" class="nav-link" data-scroll-target="#back-calculated-running-tally-since-2020-daily-lows">6. Back-calculated running tally since 2020 — daily lows</a></li>
-  <li><a href="#last-months-results-daily-lows-september-2026" id="toc-last-months-results-daily-lows-september-2026" class="nav-link" data-scroll-target="#last-months-results-daily-lows-september-2026">7. Last month’s results, daily lows: September 2026</a></li>
+  <li><a href="#last-months-results-daily-lows-october-2026" id="toc-last-months-results-daily-lows-october-2026" class="nav-link" data-scroll-target="#last-months-results-daily-lows-october-2026">7. Last month’s results, daily lows: October 2026</a></li>
   <li><a href="#map-last-months-lows-against-each-citys-record-low" id="toc-map-last-months-lows-against-each-citys-record-low" class="nav-link" data-scroll-target="#map-last-months-lows-against-each-citys-record-low">8. Map last month’s lows against each city’s record low</a></li>
   <li><a href="#where-every-city-sits-by-climate-zone" id="toc-where-every-city-sits-by-climate-zone" class="nav-link" data-scroll-target="#where-every-city-sits-by-climate-zone">9. Where every city sits, by climate zone</a></li>
   <li><a href="#method-notes-caveats" id="toc-method-notes-caveats" class="nav-link" data-scroll-target="#method-notes-caveats">Method notes &amp; caveats</a></li>
@@ -190,7 +191,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </nav>
     </div>
 <!-- main -->
-<main class="content" id="quarto-document-content">
+<main class="content" id="quarto-document-content" tabindex="-1">
 
 <header id="title-block-header" class="quarto-title-block default">
 <div class="quarto-title">
@@ -1061,7 +1062,8 @@ Important
 <span id="cb3-145"><a href="#cb3-145" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span><span class="bu">len</span>(failures)<span class="sc">}</span><span class="ss"> city/stage combination(s) failed -- see HTML source comments for details."</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Resolved 100 / 100 cities for September 2026.</code></pre>
+<pre><code>Resolved 99 / 100 cities for October 2026.
+1 city/stage combination(s) failed -- see HTML source comments for details.</code></pre>
 </div>
 </div>
 <div id="expanding-comparison-fn" class="cell" data-execution_count="4">
@@ -1109,7 +1111,7 @@ Important
 </section>
 <section id="back-calculated-running-tally-since-2020-daily-highs" class="level2">
 <h2 class="anchored" data-anchor-id="back-calculated-running-tally-since-2020-daily-highs">3. Back-calculated running tally since 2020 — daily highs</h2>
-<p>A single month is a small sample — most cities aren’t near their record in any given month. To get a real sense of <em>how often</em> major US cities are running hot relative to their own history, this section replays the comparison for <strong>every day since datetime.date(2020, 1, 1)</strong> through the end of the target month, for each of the 100 resolved cities (using the station histories already pulled above — no extra fetching needed), and keeps a cumulative tally across all of it. The per-day results computed here also feed directly into the monthly map in section 5.</p>
+<p>A single month is a small sample — most cities aren’t near their record in any given month. To get a real sense of <em>how often</em> major US cities are running hot relative to their own history, this section replays the comparison for <strong>every day since datetime.date(2020, 1, 1)</strong> through the end of the target month, for each of the 99 resolved cities (using the station histories already pulled above — no extra fetching needed), and keeps a cumulative tally across all of it. The per-day results computed here also feed directly into the monthly map in section 5.</p>
 <p>The one thing that has to change for a multi-year replay: “the record” can’t be a fixed number looked up once, because it should only reflect what was <em>actually the record at the time</em> — a day in 2021 should be judged against the record as it stood coming into 2021, not against a hotter day that happened to occur in 2023. So for each station and each calendar day, this uses an <strong>expanding, backward-looking record</strong>: the highest reading ever seen on that calendar day in any <em>earlier</em> year. If a year sets a new record, that becomes the bar every later year is compared against — and, just as importantly, a year <em>never</em> gets compared against a record set after it.</p>
 <div id="cell-historical-tally" class="cell" data-execution_count="5">
 <details open="" class="code-fold">
@@ -1145,7 +1147,7 @@ Important
 <span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>overall_tally_table</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Across 100 cities and 241,028 city-days from 2020-01-01 to 2026-09-30:</code></pre>
+<pre><code>Across 99 cities and 242,275 city-days from 2020-01-01 to 2026-10-31:</code></pre>
 </div>
 <div id="historical-tally" class="cell-output cell-output-display" data-execution_count="5">
 <div>
@@ -1163,17 +1165,17 @@ Important
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
 <td>Above record</td>
-<td>6452</td>
+<td>6304</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">1</th>
 <td>At record (tied)</td>
-<td>3737</td>
+<td>3648</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2</th>
 <td>Within 3°F of record</td>
-<td>16884</td>
+<td>16771</td>
 </tr>
 </tbody>
 </table>
@@ -1317,45 +1319,45 @@ Important
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2020</th>
-<td>906</td>
-<td>583</td>
-<td>2287</td>
+<td>886</td>
+<td>565</td>
+<td>2266</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2021</th>
-<td>729</td>
-<td>477</td>
-<td>2341</td>
+<td>708</td>
+<td>458</td>
+<td>2309</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2022</th>
-<td>747</td>
-<td>450</td>
-<td>2409</td>
+<td>729</td>
+<td>440</td>
+<td>2386</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2023</th>
-<td>1195</td>
-<td>666</td>
-<td>2891</td>
+<td>1149</td>
+<td>654</td>
+<td>2845</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2024</th>
-<td>1151</td>
-<td>669</td>
-<td>2933</td>
+<td>1081</td>
+<td>639</td>
+<td>2843</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2025</th>
-<td>822</td>
-<td>461</td>
-<td>2264</td>
+<td>775</td>
+<td>435</td>
+<td>2203</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2026</th>
-<td>902</td>
-<td>431</td>
-<td>1759</td>
+<td>976</td>
+<td>457</td>
+<td>1919</td>
 </tr>
 </tbody>
 </table>
@@ -1396,7 +1398,7 @@ Important
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>yearly_chart_path<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/yearly-tally.png?v=1792071210" style="max-width:100%;"></p>
+<p><img src="record_images/yearly-tally.png?v=1794770012" style="max-width:100%;"></p>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -1413,8 +1415,8 @@ Note
 </div>
 </section>
 </section>
-<section id="last-months-results-daily-highs-september-2026" class="level2">
-<h2 class="anchored" data-anchor-id="last-months-results-daily-highs-september-2026">4. Last month’s results, daily highs: September 2026</h2>
+<section id="last-months-results-daily-highs-october-2026" class="level2">
+<h2 class="anchored" data-anchor-id="last-months-results-daily-highs-october-2026">4. Last month’s results, daily highs: October 2026</h2>
 <p>For each city, this counts how many days in the target month fell within each distance band of that city’s record high, then assigns the single highest tier reached (dark red beats red beats light red, and so on) — see <code>classify_month</code> in the setup cell above.</p>
 <div id="cell-monthly-summary" class="cell" data-execution_count="10">
 <details open="" class="code-fold">
@@ -1470,72 +1472,72 @@ Note
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
-<td>MEX</td>
-<td>Mexico City, MX</td>
-<td>76675</td>
-<td>19.4326</td>
-<td>-99.1332</td>
-<td>30</td>
-<td>12</td>
-<td>0</td>
-<td>12</td>
-<td>20</td>
-<td>3+ days set a new record (&gt;0.5°F over)</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">1</th>
 <td>GDL</td>
 <td>Guadalajara, MX</td>
 <td>76656</td>
 <td>20.6597</td>
 <td>-103.3496</td>
-<td>30</td>
-<td>9</td>
-<td>3</td>
+<td>31</td>
+<td>10</td>
+<td>0</td>
+<td>12</td>
+<td>17</td>
+<td>3+ days set a new record (&gt;0.5°F over)</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>MEX</td>
+<td>Mexico City, MX</td>
+<td>76675</td>
+<td>19.4326</td>
+<td>-99.1332</td>
+<td>31</td>
+<td>10</td>
+<td>0</td>
+<td>10</td>
 <td>14</td>
-<td>26</td>
 <td>3+ days set a new record (&gt;0.5°F over)</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2</th>
-<td>OAX</td>
-<td>Oaxaca, MX</td>
-<td>76775</td>
-<td>17.0732</td>
-<td>-96.7266</td>
-<td>30</td>
-<td>6</td>
-<td>0</td>
+<td>JAC</td>
+<td>Jackson, WY</td>
+<td>72577</td>
+<td>43.4799</td>
+<td>-110.7624</td>
+<td>31</td>
 <td>7</td>
-<td>24</td>
+<td>0</td>
+<td>8</td>
+<td>18</td>
 <td>3+ days set a new record (&gt;0.5°F over)</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">3</th>
-<td>OKC</td>
-<td>Oklahoma City, OK</td>
-<td>72353</td>
-<td>35.4676</td>
-<td>-97.5164</td>
-<td>30</td>
-<td>5</td>
-<td>2</td>
-<td>13</td>
-<td>24</td>
+<td>LA</td>
+<td>Los Angeles, CA</td>
+<td>72295</td>
+<td>34.0522</td>
+<td>-118.2437</td>
+<td>31</td>
+<td>4</td>
+<td>0</td>
+<td>7</td>
+<td>10</td>
 <td>3+ days set a new record (&gt;0.5°F over)</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">4</th>
-<td>MEM</td>
-<td>Memphis, TN</td>
-<td>72334</td>
-<td>35.1495</td>
-<td>-90.0490</td>
-<td>30</td>
+<td>NSH</td>
+<td>Nashville, TN</td>
+<td>72327</td>
+<td>36.1627</td>
+<td>-86.7816</td>
+<td>31</td>
+<td>4</td>
+<td>0</td>
 <td>5</td>
-<td>2</td>
-<td>15</td>
-<td>24</td>
+<td>19</td>
 <td>3+ days set a new record (&gt;0.5°F over)</td>
 </tr>
 <tr class="even">
@@ -1553,79 +1555,79 @@ Note
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">95</th>
+<th data-quarto-table-cell-role="th">94</th>
 <td>TUS</td>
 <td>Tucson, AZ</td>
 <td>72274</td>
 <td>32.2226</td>
 <td>-110.9747</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
-<td>11</td>
+<td>10</td>
 <td>3+ days within 10°F of record</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">96</th>
+<th data-quarto-table-cell-role="th">95</th>
 <td>VIC</td>
 <td>Victoria, BC</td>
 <td>71200</td>
 <td>48.4284</td>
 <td>-123.3656</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
-<td>2</td>
-<td>At least 1 day within 10°F of record</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">97</th>
-<td>VB</td>
-<td>Virginia Beach, VA</td>
-<td>72308</td>
-<td>36.8529</td>
-<td>-75.9780</td>
-<td>30</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>9</td>
+<td>12</td>
 <td>3+ days within 10°F of record</td>
 </tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">98</th>
-<td>DC</td>
-<td>Washington, DC</td>
-<td>72405</td>
-<td>38.9072</td>
-<td>-77.0369</td>
-<td>30</td>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">96</th>
+<td>VAN</td>
+<td>Vancouver, BC</td>
+<td>71201</td>
+<td>49.2827</td>
+<td>-123.1207</td>
+<td>31</td>
 <td>0</td>
+<td>0</td>
+<td>3</td>
+<td>19</td>
+<td>3+ days within 3°F of record</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">97</th>
+<td>TUL</td>
+<td>Tulsa, OK</td>
+<td>72356</td>
+<td>36.1540</td>
+<td>-95.9928</td>
+<td>31</td>
 <td>0</td>
 <td>1</td>
-<td>8</td>
-<td>1-2 days within 3°F of record</td>
+<td>3</td>
+<td>14</td>
+<td>1-2 days tied the record (±0.5°F)</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">99</th>
+<th data-quarto-table-cell-role="th">98</th>
 <td>WPG</td>
 <td>Winnipeg, MB</td>
 <td>71852</td>
 <td>49.8951</td>
 <td>-97.1384</td>
-<td>30</td>
-<td>0</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>1</td>
-<td>At least 1 day within 10°F of record</td>
+<td>6</td>
+<td>1-2 days within 3°F of record</td>
 </tr>
 </tbody>
 </table>
 
-<p>100 rows × 11 columns</p>
+<p>99 rows × 11 columns</p>
 </div>
 </div>
 </div>
@@ -1649,7 +1651,7 @@ Note
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>image_path<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/city-temp-records.png?v=1792071210" style="max-width:100%;"></p>
+<p><img src="record_images/city-temp-records.png?v=1794770012" style="max-width:100%;"></p>
 </div>
 </section>
 <section id="back-calculated-running-tally-since-2020-daily-lows" class="level2">
@@ -1692,7 +1694,7 @@ Note
 <span id="cb16-32"><a href="#cb16-32" aria-hidden="true" tabindex="-1"></a>overall_tally_min_table</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Across 100 cities and 240,694 city-days from 2020-01-01 to 2026-09-30:</code></pre>
+<pre><code>Across 99 cities and 241,989 city-days from 2020-01-01 to 2026-10-31:</code></pre>
 </div>
 <div id="historical-tally-min" class="cell-output cell-output-display" data-execution_count="13">
 <div>
@@ -1710,17 +1712,17 @@ Note
 <tr class="odd">
 <th data-quarto-table-cell-role="th">0</th>
 <td>Below record</td>
-<td>1437</td>
+<td>1409</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">1</th>
 <td>At record (tied)</td>
-<td>761</td>
+<td>749</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2</th>
 <td>Within 3°F of record</td>
-<td>4480</td>
+<td>4412</td>
 </tr>
 </tbody>
 </table>
@@ -1761,45 +1763,45 @@ Note
 <tbody>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2020</th>
-<td>233</td>
-<td>124</td>
-<td>618</td>
+<td>225</td>
+<td>126</td>
+<td>609</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2021</th>
-<td>254</td>
-<td>158</td>
-<td>797</td>
+<td>248</td>
+<td>154</td>
+<td>791</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2022</th>
-<td>282</td>
-<td>151</td>
-<td>897</td>
+<td>269</td>
+<td>146</td>
+<td>883</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2023</th>
-<td>197</td>
-<td>90</td>
-<td>689</td>
+<td>189</td>
+<td>87</td>
+<td>670</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2024</th>
-<td>122</td>
-<td>76</td>
-<td>504</td>
+<td>119</td>
+<td>77</td>
+<td>497</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">2025</th>
-<td>155</td>
-<td>91</td>
-<td>579</td>
+<td>153</td>
+<td>89</td>
+<td>567</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2026</th>
-<td>194</td>
-<td>71</td>
-<td>396</td>
+<td>206</td>
+<td>70</td>
+<td>395</td>
 </tr>
 </tbody>
 </table>
@@ -1838,11 +1840,11 @@ Note
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>yearly_chart_path_min<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/yearly-tally-low.png?v=1792071210" style="max-width:100%;"></p>
+<p><img src="record_images/yearly-tally-low.png?v=1794770012" style="max-width:100%;"></p>
 </div>
 </section>
-<section id="last-months-results-daily-lows-september-2026" class="level2">
-<h2 class="anchored" data-anchor-id="last-months-results-daily-lows-september-2026">7. Last month’s results, daily lows: September 2026</h2>
+<section id="last-months-results-daily-lows-october-2026" class="level2">
+<h2 class="anchored" data-anchor-id="last-months-results-daily-lows-october-2026">7. Last month’s results, daily lows: October 2026</h2>
 <p>Same idea as section 4, mirrored: how many days in the target month fell within each distance band of that city’s record <em>low</em>.</p>
 <div id="cell-monthly-summary-min" class="cell" data-execution_count="17">
 <details open="" class="code-fold">
@@ -1903,68 +1905,68 @@ Note
 <td>76548</td>
 <td>22.2331</td>
 <td>-97.8611</td>
-<td>30</td>
-<td>7</td>
-<td>1</td>
+<td>31</td>
 <td>10</td>
-<td>18</td>
+<td>1</td>
+<td>12</td>
+<td>21</td>
 <td>3+ days set a new record low (&gt;0.5°F under)</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">1</th>
-<td>SAV</td>
-<td>Savannah, GA</td>
-<td>72207</td>
-<td>32.0809</td>
-<td>-81.0912</td>
-<td>30</td>
-<td>1</td>
-<td>0</td>
+<td>STJ</td>
+<td>St. John's, NL</td>
+<td>71801</td>
+<td>47.5615</td>
+<td>-52.7126</td>
+<td>31</td>
 <td>2</td>
-<td>4</td>
+<td>0</td>
+<td>3</td>
+<td>21</td>
 <td>1-2 days set a new record low (&gt;0.5°F under)</td>
 </tr>
 <tr class="odd">
 <th data-quarto-table-cell-role="th">2</th>
-<td>ABQ</td>
-<td>Albuquerque, NM</td>
-<td>72365</td>
-<td>35.0844</td>
-<td>-106.6504</td>
-<td>30</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>No days within 10°F of record low</td>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">3</th>
-<td>ANC</td>
-<td>Anchorage, AK</td>
-<td>70273</td>
-<td>61.2181</td>
-<td>-149.9003</td>
-<td>30</td>
-<td>0</td>
-<td>1</td>
-<td>1</td>
-<td>3</td>
-<td>1-2 days tied the record low (±0.5°F)</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">4</th>
 <td>BZE</td>
 <td>Belize City, BZ</td>
 <td>78583</td>
 <td>17.4995</td>
 <td>-88.1976</td>
-<td>30</td>
-<td>0</td>
+<td>31</td>
+<td>1</td>
 <td>0</td>
 <td>1</td>
-<td>26</td>
-<td>1-2 days within 3°F of record low</td>
+<td>29</td>
+<td>1-2 days set a new record low (&gt;0.5°F under)</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>JMS</td>
+<td>Jackson, MS</td>
+<td>72235</td>
+<td>32.2988</td>
+<td>-90.1848</td>
+<td>31</td>
+<td>1</td>
+<td>0</td>
+<td>1</td>
+<td>2</td>
+<td>1-2 days set a new record low (&gt;0.5°F under)</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>ANC</td>
+<td>Anchorage, AK</td>
+<td>70273</td>
+<td>61.2181</td>
+<td>-149.9003</td>
+<td>31</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>3</td>
+<td>3+ days within 10°F of record low</td>
 </tr>
 <tr class="even">
 <th data-quarto-table-cell-role="th">...</th>
@@ -1981,79 +1983,79 @@ Note
 <td>...</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">95</th>
+<th data-quarto-table-cell-role="th">94</th>
 <td>VIC</td>
 <td>Victoria, BC</td>
 <td>71200</td>
 <td>48.4284</td>
 <td>-123.3656</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
-<td>10</td>
+<td>5</td>
 <td>3+ days within 10°F of record low</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">96</th>
+<th data-quarto-table-cell-role="th">95</th>
 <td>VB</td>
 <td>Virginia Beach, VA</td>
 <td>72308</td>
 <td>36.8529</td>
 <td>-75.9780</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
-<td>2</td>
+<td>1</td>
 <td>At least 1 day within 10°F of record low</td>
 </tr>
 <tr class="odd">
-<th data-quarto-table-cell-role="th">97</th>
+<th data-quarto-table-cell-role="th">96</th>
 <td>DC</td>
 <td>Washington, DC</td>
 <td>72405</td>
 <td>38.9072</td>
 <td>-77.0369</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
-<td>3</td>
+<td>5</td>
 <td>3+ days within 10°F of record low</td>
 </tr>
 <tr class="even">
-<th data-quarto-table-cell-role="th">98</th>
+<th data-quarto-table-cell-role="th">97</th>
 <td>WIC</td>
 <td>Wichita, KS</td>
 <td>72450</td>
 <td>37.6872</td>
 <td>-97.3301</td>
-<td>30</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>0</td>
-<td>No days within 10°F of record low</td>
-</tr>
-<tr class="odd">
-<th data-quarto-table-cell-role="th">99</th>
-<td>WPG</td>
-<td>Winnipeg, MB</td>
-<td>71852</td>
-<td>49.8951</td>
-<td>-97.1384</td>
-<td>30</td>
+<td>31</td>
 <td>0</td>
 <td>0</td>
 <td>0</td>
 <td>2</td>
 <td>At least 1 day within 10°F of record low</td>
 </tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">98</th>
+<td>WPG</td>
+<td>Winnipeg, MB</td>
+<td>71852</td>
+<td>49.8951</td>
+<td>-97.1384</td>
+<td>31</td>
+<td>0</td>
+<td>0</td>
+<td>0</td>
+<td>1</td>
+<td>At least 1 day within 10°F of record low</td>
+</tr>
 </tbody>
 </table>
 
-<p>100 rows × 11 columns</p>
+<p>99 rows × 11 columns</p>
 </div>
 </div>
 </div>
@@ -2077,7 +2079,7 @@ Note
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f'&lt;img src="</span><span class="sc">{</span>image_path_min<span class="sc">.</span>as_posix()<span class="sc">}</span><span class="ss">?v=</span><span class="sc">{</span>RUN_TOKEN<span class="sc">}</span><span class="ss">" style="max-width:100%;" /&gt;'</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/city-temp-records-low.png?v=1792071210" style="max-width:100%;"></p>
+<p><img src="record_images/city-temp-records-low.png?v=1794770012" style="max-width:100%;"></p>
 </div>
 </section>
 <section id="where-every-city-sits-by-climate-zone" class="level2">
@@ -2149,7 +2151,24 @@ Note
 <span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> label, tb <span class="kw">in</span> failures:</span>
 <span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"&lt;!-- Skipped </span><span class="sc">{</span>label<span class="sc">}</span><span class="ss">:</span><span class="ch">\n</span><span class="sc">{</span>tb<span class="sc">}</span><span class="ch">\n</span><span class="ss">--&gt;"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
-<p><img src="record_images/city-reference-map.png?v=1792071210" style="max-width:100%;"></p>
+<p><img src="record_images/city-reference-map.png?v=1794770012" style="max-width:100%;"> <!-- Skipped Leon, MX:
+Traceback (most recent call last):
+  File "/tmp/ipykernel_2754/1388254641.py", line 316, in run_stage
+    return fn()
+           ^^^^
+  File "/home/runner/miniconda3/envs/geospatial-workflows/lib/python3.11/concurrent/futures/_base.py", line 449, in result
+    return self.__get_result()
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/miniconda3/envs/geospatial-workflows/lib/python3.11/concurrent/futures/_base.py", line 401, in __get_result
+    raise self._exception
+  File "/home/runner/miniconda3/envs/geospatial-workflows/lib/python3.11/concurrent/futures/thread.py", line 58, in run
+    result = self.fn(*self.args, **self.kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/tmp/ipykernel_2754/2001876145.py", line 120, in resolve_city
+    raise RuntimeError(f"No usable candidate station for {label}: " + "; ".join(reasons))
+RuntimeError: No usable candidate station for Leon, MX: MMLO0: only 10 year(s) of history; 76573: only 12 year(s) of history; 76577: only 6 year(s) of history; 76571: only 24 of 31 October days have 15+ earlier years of lows
+
+--></p>
 </div>
 </section>
 <section id="method-notes-caveats" class="level2">
@@ -2327,7 +2346,8 @@ Note
           return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
       // Inspect non-navigation links and adorn them if external
-     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
       for (var i=0; i<links.length; i++) {
         const link = links[i];
         if (!isInternal(link.href)) {
@@ -2336,8 +2356,69 @@ Note
           if (link.dataset.originalHref !== undefined) {
             link.href = link.dataset.originalHref;
           }
+          if (!link.classList.contains('no-external-icon')) {
+          }
         }
       }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
     function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
       const config = {
         allowHTML: true,
@@ -2351,6 +2432,7 @@ Note
         interactiveBorder: 10,
         theme: 'quarto',
         placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
       };
       if (contentFn) {
         config.content = contentFn;
@@ -2513,44 +2595,54 @@ Note
           const lineIds = lines.map((line) => {
             return targetCell + "-" + line;
           })
-          let top = null;
-          let height = null;
-          let parent = null;
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
           if (lineIds.length > 0) {
-              //compute the position of the single el (top and bottom and make a div)
-              const el = window.document.getElementById(lineIds[0]);
-              top = el.offsetTop;
-              height = el.offsetHeight;
-              parent = el.parentElement.parentElement;
-            if (lineIds.length > 1) {
-              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-              height = bottom - top;
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
             }
-            if (top !== null && height !== null && parent !== null) {
-              // cook up a div (if necessary) and position it 
-              let div = window.document.getElementById("code-annotation-line-highlight");
-              if (div === null) {
-                div = window.document.createElement("div");
-                div.setAttribute("id", "code-annotation-line-highlight");
-                div.style.position = 'absolute';
-                parent.appendChild(div);
-              }
-              div.style.top = top - 2 + "px";
-              div.style.height = height + 4 + "px";
-              div.style.left = 0;
-              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-              if (gutterDiv === null) {
-                gutterDiv = window.document.createElement("div");
-                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-                gutterDiv.style.position = 'absolute';
-                const codeCell = window.document.getElementById(targetCell);
-                const gutter = codeCell.querySelector('.code-annotation-gutter');
-                gutter.appendChild(gutterDiv);
-              }
-              gutterDiv.style.top = top - 2 + "px";
-              gutterDiv.style.height = height + 4 + "px";
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
             }
+            placeBand(gutterDiv, el, lastEl);
             selectedAnnoteEl = annoteEl;
           }
         };
@@ -2648,6 +2740,9 @@ Note
       }
     }
   });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
 <div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> "How Close Did Your City Come to a Temperature Record Last Month? Tracking ~100 Cities Across North America"</span></span>
